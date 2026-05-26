@@ -1,0 +1,732 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>8 Semanas · 10K</title>
+  <meta name="description" content="Tracker de treinos de corrida — Plano 8 semanas para 10K" />
+  <meta name="theme-color" content="#0A0A0F" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="10K Tracker" />
+  <link rel="manifest" href="manifest.json" />
+  <link rel="apple-touch-icon" href="icons/icon-192.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { font-size: 16px; }
+    body {
+      font-family: 'Outfit', system-ui, sans-serif;
+      background: #0A0A0F;
+      color: #F0EEF6;
+      min-height: 100vh;
+      min-height: 100dvh;
+      overscroll-behavior: none;
+    }
+    ::-webkit-scrollbar { width: 4px; }
+    ::-webkit-scrollbar-track { background: #111; }
+    ::-webkit-scrollbar-thumb { background: #333; border-radius: 2px; }
+
+    /* ── Layout ── */
+    #app { max-width: 700px; margin: 0 auto; }
+
+    /* ── Header ── */
+    .header {
+      background: linear-gradient(135deg, #0F0F1A 0%, #1A1025 100%);
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+      padding: 48px 20px 16px;
+      position: sticky; top: 0; z-index: 100;
+    }
+    .header-top { display: flex; justify-content: space-between; align-items: flex-start; }
+    .header-label { font-size: 11px; letter-spacing: 3px; color: #555; text-transform: uppercase; margin-bottom: 4px; }
+    .header-title {
+      font-size: 26px; font-weight: 800; letter-spacing: -0.5px;
+      background: linear-gradient(135deg, #fff 0%, #A29BFE 100%);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    }
+    .header-count-label { font-size: 11px; color: #555; margin-bottom: 4px; text-align: right; }
+    .header-count { font-size: 22px; font-weight: 800; color: #A29BFE; }
+    .header-count span { font-size: 13px; font-weight: 400; color: #555; }
+    .progress-bar-bg { margin-top: 14px; background: #1A1A2E; border-radius: 8px; height: 6px; overflow: hidden; }
+    .progress-bar-fill {
+      height: 100%; border-radius: 8px;
+      background: linear-gradient(90deg, #A29BFE, #FF6B6B);
+      transition: width 0.5s ease;
+    }
+    .view-toggle { display: flex; gap: 8px; margin-top: 12px; }
+    .view-btn {
+      padding: 5px 14px; border-radius: 20px; border: none; cursor: pointer;
+      font-size: 12px; font-weight: 600; letter-spacing: 0.5px; font-family: inherit;
+      transition: all 0.2s;
+    }
+    .view-btn.active { background: #A29BFE; color: #0A0A0F; }
+    .view-btn.inactive { background: rgba(255,255,255,0.06); color: #777; }
+
+    /* ── Content padding ── */
+    .content { padding: 0 16px 80px; }
+
+    /* ── Week selector ── */
+    .week-scroll {
+      display: flex; gap: 8px; padding: 14px 0;
+      overflow-x: auto; scrollbar-width: none;
+    }
+    .week-scroll::-webkit-scrollbar { display: none; }
+    .week-btn {
+      flex-shrink: 0; padding: 8px 14px; border-radius: 12px; border: none; cursor: pointer;
+      font-family: inherit; font-weight: 700; font-size: 12px;
+      transition: all 0.2s; position: relative;
+    }
+    .week-btn:hover { opacity: 0.85; transform: translateY(-1px); }
+    .week-badge {
+      position: absolute; top: -4px; right: -4px;
+      width: 16px; height: 16px; border-radius: 50%;
+      border: 2px solid #0A0A0F;
+      font-size: 8px; display: flex; align-items: center; justify-content: center;
+      color: #0A0A0F; font-weight: 800;
+    }
+
+    /* ── Week header card ── */
+    .week-header-card {
+      border-radius: 16px; padding: 16px 20px; margin-bottom: 16px;
+    }
+    .week-header-title { font-size: 12px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; }
+    .week-header-sub { font-size: 13px; color: #666; margin-top: 4px; }
+
+    /* ── Day tabs ── */
+    .day-tabs { display: flex; gap: 8px; margin-bottom: 14px; }
+    .day-tab {
+      flex: 1; padding: 10px 8px; border-radius: 12px; border: none; cursor: pointer;
+      font-family: inherit; font-weight: 700; font-size: 11px; transition: all 0.2s;
+    }
+    .day-tab-name { display: block; }
+    .day-tab-km { display: block; font-size: 9px; margin-top: 2px; opacity: 0.8; }
+    .day-tab-check { display: block; font-size: 10px; margin-top: 1px; }
+
+    /* ── Day card ── */
+    .day-card {
+      background: rgba(255,255,255,0.03);
+      border-radius: 16px; margin-bottom: 12px; overflow: hidden;
+      transition: all 0.25s; cursor: pointer;
+    }
+    .day-card:hover { transform: translateY(-2px); box-shadow: 0 8px 32px rgba(0,0,0,0.4); }
+    .day-card-header { padding: 16px 18px; display: flex; justify-content: space-between; align-items: center; }
+    .day-card-left { display: flex; align-items: center; gap: 12px; }
+    .day-icon {
+      width: 44px; height: 44px; border-radius: 12px;
+      display: flex; align-items: center; justify-content: center; font-size: 20px;
+    }
+    .day-name { font-size: 12px; font-weight: 700; letter-spacing: 0.5px; }
+    .day-type { font-size: 15px; font-weight: 700; color: #F0EEF6; margin-top: 1px; }
+    .day-card-right { display: flex; align-items: center; gap: 10px; }
+    .day-distance { font-size: 18px; font-weight: 800; }
+    .day-done-label { font-size: 10px; color: #48BB78; }
+    .chevron { color: #444; font-size: 12px; transition: transform 0.2s; }
+    .chevron.open { transform: rotate(180deg); }
+
+    /* ── Day body ── */
+    .day-body { padding: 0 18px 18px; }
+    .day-divider { height: 1px; margin-bottom: 14px; }
+    .detail-pills { margin-bottom: 12px; display: flex; flex-wrap: wrap; gap: 6px; }
+    .detail-pill {
+      padding: 4px 10px; border-radius: 8px;
+      font-size: 12px; font-weight: 600;
+    }
+    .section-label {
+      font-size: 11px; color: #555; letter-spacing: 1px;
+      text-transform: uppercase; margin-bottom: 8px;
+    }
+    .structure-list { margin-bottom: 14px; }
+    .structure-item { display: flex; gap: 10px; margin-bottom: 8px; align-items: flex-start; }
+    .structure-num {
+      width: 20px; height: 20px; border-radius: 6px; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 10px; font-weight: 800;
+    }
+    .structure-text { font-size: 13px; color: #C0BDD6; line-height: 1.5; }
+    .objective-box {
+      background: rgba(255,255,255,0.04); border-radius: 10px; padding: 10px 14px;
+      font-size: 13px; color: #8E8BA6; font-style: italic; margin-bottom: 14px;
+    }
+
+    /* ── Results ── */
+    .result-section { margin-top: 16px; }
+    .result-text {
+      width: 100%; min-height: 90px; background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.15); border-radius: 10px;
+      padding: 12px 14px; color: #F0EEF6; font-size: 13px;
+      font-family: inherit; resize: vertical; line-height: 1.5;
+      transition: box-shadow 0.2s;
+    }
+    .result-text:focus { outline: none; box-shadow: 0 0 0 2px rgba(255,255,255,0.15); }
+    .result-actions { display: flex; gap: 8px; margin-top: 8px; }
+    .btn-save {
+      flex: 1; padding: 10px; border-radius: 10px; border: none;
+      background: #48BB78; color: #0A0A0F; font-weight: 700;
+      font-size: 13px; cursor: pointer; font-family: inherit;
+    }
+    .btn-cancel {
+      padding: 10px 16px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.1);
+      background: transparent; color: #666; font-weight: 600;
+      font-size: 13px; cursor: pointer; font-family: inherit;
+    }
+    .result-done-box {
+      background: rgba(72,187,120,0.08); border: 1px solid rgba(72,187,120,0.2);
+      border-radius: 10px; padding: 12px 14px; font-size: 13px; color: #9FD9B8;
+      line-height: 1.5; margin-bottom: 8px; white-space: pre-wrap;
+    }
+    .btn-edit {
+      padding: 7px 14px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1);
+      background: transparent; color: #666; font-size: 12px; cursor: pointer;
+      font-family: inherit; font-weight: 600;
+    }
+    .result-empty { display: flex; gap: 8px; }
+    .btn-check {
+      flex: 1; padding: 12px; border-radius: 10px; border: 1px solid rgba(72,187,120,0.3);
+      background: rgba(72,187,120,0.12); color: #48BB78;
+      font-weight: 700; font-size: 13px; cursor: pointer; font-family: inherit; transition: all 0.2s;
+    }
+    .btn-register {
+      flex: 2; padding: 12px; border-radius: 10px;
+      font-weight: 700; font-size: 13px; cursor: pointer; font-family: inherit; transition: all 0.2s;
+    }
+    .btn-check:hover, .btn-register:hover { transform: scale(1.03); }
+
+    /* ── Overview ── */
+    .overview-meta { font-size: 13px; color: #555; margin-bottom: 16px; }
+    .overview-week { margin-bottom: 20px; }
+    .overview-week-title { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+    .overview-dot { width: 10px; height: 10px; border-radius: 50%; }
+    .overview-week-name { font-size: 13px; font-weight: 700; }
+    .overview-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .overview-card {
+      border-radius: 10px; padding: 10px 12px; cursor: pointer; transition: all 0.2s;
+    }
+    .overview-card:hover { transform: translateY(-1px); }
+    .overview-card-top { display: flex; justify-content: space-between; align-items: center; }
+    .overview-day { font-size: 11px; font-weight: 700; }
+    .overview-type { font-size: 12px; color: #888; margin-top: 2px; }
+    .overview-km { font-size: 11px; color: #555; margin-top: 2px; }
+
+    /* ── Legend ── */
+    .legend {
+      margin-top: 24px; background: rgba(255,255,255,0.02);
+      border: 1px solid rgba(255,255,255,0.06); border-radius: 14px; padding: 14px 16px;
+    }
+    .legend-title { font-size: 10px; color: #444; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 10px; }
+    .legend-row { display: flex; flex-wrap: wrap; gap: 8px; }
+    .legend-dot { display: flex; align-items: center; gap: 5px; }
+    .legend-dot-circle { width: 8px; height: 8px; border-radius: 50%; }
+    .legend-dot-text { font-size: 11px; color: #666; }
+    .legend-pill {
+      padding: 3px 8px; border-radius: 6px; font-size: 10px; font-weight: 600;
+    }
+
+    /* ── Animations ── */
+    .fade-in { animation: fadeIn 0.3s ease; }
+    @keyframes fadeIn { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
+
+    /* ── Install banner ── */
+    #install-banner {
+      display: none; position: fixed; bottom: 0; left: 0; right: 0;
+      background: linear-gradient(135deg, #1A1025, #0F0F1A);
+      border-top: 1px solid rgba(162,155,254,0.3);
+      padding: 16px 20px; z-index: 200;
+      align-items: center; justify-content: space-between; gap: 12px;
+    }
+    #install-banner.show { display: flex; }
+    .install-text { font-size: 13px; color: #C0BDD6; }
+    .install-text strong { color: #A29BFE; }
+    .install-actions { display: flex; gap: 8px; flex-shrink: 0; }
+    .btn-install {
+      padding: 8px 16px; border-radius: 10px; border: none;
+      background: #A29BFE; color: #0A0A0F; font-weight: 700;
+      font-size: 12px; cursor: pointer; font-family: inherit;
+    }
+    .btn-dismiss {
+      padding: 8px 12px; border-radius: 10px; border: none;
+      background: rgba(255,255,255,0.06); color: #666;
+      font-size: 12px; cursor: pointer; font-family: inherit;
+    }
+  </style>
+</head>
+<body>
+<div id="app">
+  <div class="header">
+    <div class="header-top">
+      <div>
+        <div class="header-label">plano de corrida</div>
+        <div class="header-title">8 Semanas · 10K</div>
+      </div>
+      <div>
+        <div class="header-count-label">progresso</div>
+        <div class="header-count" id="progress-count">0<span id="progress-total">/32</span></div>
+      </div>
+    </div>
+    <div class="progress-bar-bg">
+      <div class="progress-bar-fill" id="progress-bar" style="width:0%"></div>
+    </div>
+    <div class="view-toggle">
+      <button class="view-btn active" id="btn-view-week" onclick="setView('week')">Por Semana</button>
+      <button class="view-btn inactive" id="btn-view-overview" onclick="setView('overview')">Visão Geral</button>
+    </div>
+  </div>
+
+  <div class="content">
+    <div class="week-scroll" id="week-selector"></div>
+    <div id="view-container"></div>
+    <div class="legend">
+      <div class="legend-title">Legenda</div>
+      <div class="legend-row" id="legend-days"></div>
+      <div class="legend-row" style="margin-top:8px" id="legend-types"></div>
+    </div>
+  </div>
+</div>
+
+<div id="install-banner">
+  <div class="install-text"><strong>📲 Instalar app</strong><br>Use offline no celular</div>
+  <div class="install-actions">
+    <button class="btn-install" id="btn-install">Instalar</button>
+    <button class="btn-dismiss" onclick="dismissInstall()">Agora não</button>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════
+//  DATA
+// ═══════════════════════════════════════
+const PLAN = [
+  { week:1, label:"Semana 1", theme:"#E8534A", days:[
+    { day:"Segunda", type:"Regenerativo", typeColor:"#4ECDC4", distance:"5 km",
+      details:["Pace: 6:30–6:55/km","Zona 2"], structure:null,
+      objective:"Rodar confortável sem subir FC." },
+    { day:"Quarta", type:"Fartlek", typeColor:"#FFD93D", distance:"6 km",
+      details:["6 km total"],
+      structure:["2 km leves (Z2)","6x: 1 min forte → 4:55–5:10 (Z5) + 2 min leve → 6:40–7:00","Finaliza leve"],
+      objective:null },
+    { day:"Sexta", type:"Tempo Run", typeColor:"#FF6B6B", distance:"5 km",
+      details:["5 km total"],
+      structure:["2 km Z2","2 km ritmo tempo: 5:35–5:45/km (Zona 4)","1 km leve"],
+      objective:null },
+    { day:"Domingo", type:"Longão", typeColor:"#A29BFE", distance:"8 km",
+      details:["Pace: 6:30–7:00/km","Zona 2"], structure:null, objective:null }
+  ]},
+  { week:2, label:"Semana 2", theme:"#E8A838", days:[
+    { day:"Segunda", type:"Regenerativo", typeColor:"#4ECDC4", distance:"5 km",
+      details:["Pace: 6:25–6:50/km","Zona 2"], structure:null, objective:null },
+    { day:"Quarta", type:"Fartlek", typeColor:"#FFD93D", distance:"7 km",
+      details:["7 km total"],
+      structure:["2 km leves","8x: 1 min forte → 4:55–5:05 + 90 s leve","Finaliza leve"],
+      objective:null },
+    { day:"Sexta", type:"Tempo", typeColor:"#FF6B6B", distance:"6 km",
+      details:["6 km total"],
+      structure:["2 km leves","3 km tempo: 5:30–5:40/km","1 km leve"],
+      objective:null },
+    { day:"Domingo", type:"Longão", typeColor:"#A29BFE", distance:"9 km",
+      details:["Pace: 6:25–6:55/km","Zona 2"], structure:null, objective:null }
+  ]},
+  { week:3, label:"Semana 3", theme:"#48BB78", days:[
+    { day:"Segunda", type:"Regenerativo", typeColor:"#4ECDC4", distance:"6 km",
+      details:["Pace: 6:20–6:45/km","Zona 2"], structure:null, objective:null },
+    { day:"Quarta", type:"Intervalado", typeColor:"#F6AD55", distance:"7 km",
+      details:["7 km total"],
+      structure:["2 km leves","5x 400 m: pace 4:50–5:00 + recuperação trotando","Finaliza leve"],
+      objective:null },
+    { day:"Sexta", type:"Tempo Sustentado", typeColor:"#FF6B6B", distance:"6 km",
+      details:["6 km total"],
+      structure:["1 km leve","4 km: 5:30–5:40/km (Zona 4)","1 km leve"],
+      objective:null },
+    { day:"Domingo", type:"Longão", typeColor:"#A29BFE", distance:"10 km",
+      details:["Pace: 6:25–6:55/km","Zona 2"], structure:null, objective:null }
+  ]},
+  { week:4, label:"Semana 4 — Descarga", theme:"#63B3ED", days:[
+    { day:"Segunda", type:"Regenerativo", typeColor:"#4ECDC4", distance:"5 km",
+      details:["Zona 1/Z2","Pace: 6:40–7:10/km"], structure:null, objective:"Redução de fadiga." },
+    { day:"Quarta", type:"Ativação", typeColor:"#FFD93D", distance:"5 km",
+      details:["5 km Z2"],
+      structure:["5 acelerações de 20 s: pace ~4:50","Recuperação total entre cada"],
+      objective:null },
+    { day:"Sexta", type:"Moderado", typeColor:"#FC8181", distance:"4 km",
+      details:["Pace: 5:55–6:10/km","Zona 3"], structure:null, objective:null },
+    { day:"Domingo", type:"Longão Leve", typeColor:"#A29BFE", distance:"8 km",
+      details:["Z2","Pace: 6:35–7:00/km"], structure:null, objective:null }
+  ]},
+  { week:5, label:"Semana 5", theme:"#9F7AEA", days:[
+    { day:"Segunda", type:"Regenerativo", typeColor:"#4ECDC4", distance:"6 km",
+      details:["Z2","Pace: 6:20–6:45/km"], structure:null, objective:null },
+    { day:"Quarta", type:"Fartlek Forte", typeColor:"#FFD93D", distance:"8 km",
+      details:["8 km total"],
+      structure:["2 km leves","10x: 1 min forte → 4:45–5:00 + 1 min leve","Finaliza leve"],
+      objective:null },
+    { day:"Sexta", type:"Tempo", typeColor:"#FF6B6B", distance:"7 km",
+      details:["7 km total"],
+      structure:["2 km leves","4 km: 5:25–5:35/km","1 km leve"],
+      objective:null },
+    { day:"Domingo", type:"Longão", typeColor:"#A29BFE", distance:"11 km",
+      details:["Z2","Pace: 6:20–6:50/km"], structure:null, objective:null }
+  ]},
+  { week:6, label:"Semana 6", theme:"#ED64A6", days:[
+    { day:"Segunda", type:"Regenerativo", typeColor:"#4ECDC4", distance:"6 km",
+      details:["Z2 baixa","Pace: 6:30–6:55/km"], structure:null, objective:null },
+    { day:"Quarta", type:"Intervalado", typeColor:"#F6AD55", distance:"8 km",
+      details:["8 km total"],
+      structure:["2 km leves","6x 600 m: 4:50–5:00 + recuperação trotando","Finaliza leve"],
+      objective:null },
+    { day:"Sexta", type:"Tempo Sustentado", typeColor:"#FF6B6B", distance:"7 km",
+      details:["7 km total"],
+      structure:["1 km leve","5 km: 5:25–5:35/km","1 km leve"],
+      objective:null },
+    { day:"Domingo", type:"Longão", typeColor:"#A29BFE", distance:"12 km",
+      details:["Z2","Pace: 6:20–6:50/km"], structure:null, objective:null }
+  ]},
+  { week:7, label:"Semana 7", theme:"#F6AD55", days:[
+    { day:"Segunda", type:"Regenerativo", typeColor:"#4ECDC4", distance:"6 km",
+      details:["Z2","Pace: 6:20–6:45/km"], structure:null, objective:null },
+    { day:"Quarta", type:"Progressivo", typeColor:"#68D391", distance:"8 km",
+      details:["8 km total"],
+      structure:["3 km → 6:20/km","3 km → 5:50/km","2 km → 5:20–5:30/km"],
+      objective:null },
+    { day:"Sexta", type:"Ritmo 10k", typeColor:"#FC8181", distance:"6 km",
+      details:["6 km total"],
+      structure:["1 km leve","4 km: 5:20–5:30/km (ritmo de prova)","1 km leve"],
+      objective:null },
+    { day:"Domingo", type:"Longão", typeColor:"#A29BFE", distance:"13 km",
+      details:["Z2","Pace: 6:20–6:50/km"], structure:null, objective:null }
+  ]},
+  { week:8, label:"Semana 8 — Prova", theme:"#FC8181", days:[
+    { day:"Segunda", type:"Regenerativo", typeColor:"#4ECDC4", distance:"5 km",
+      details:["Zona 1/Z2","Pace: 6:40–7:10/km"], structure:null, objective:null },
+    { day:"Quarta", type:"Tiros Curtos", typeColor:"#FFD93D", distance:"6 km",
+      details:["6 km total"],
+      structure:["2 km leves","8x 200 m: 4:35–4:50/km + recuperação caminhando/trotando","Finaliza leve"],
+      objective:null },
+    { day:"Sexta", type:"Pré-teste", typeColor:"#4ECDC4", distance:"4 km",
+      details:["Z2","Pace: 6:20–6:50/km"], structure:null, objective:"Descanso ativo." },
+    { day:"Domingo", type:"🏆 TESTE 10 KM", typeColor:"#FFD700", distance:"10 km",
+      details:["Meta: 54–57 min"],
+      structure:["km 1–3: 5:40–5:45/km","km 4–7: 5:30–5:35/km","km 8–10: o mais forte sustentável possível"],
+      objective:"Meta provável: 54–57 min. 🔥" }
+  ]}
+];
+
+const DAY_COLORS = { "Segunda":"#4ECDC4","Quarta":"#FFD93D","Sexta":"#FF6B6B","Domingo":"#A29BFE" };
+const TYPE_ICONS = {
+  "Regenerativo":"🌱","Fartlek":"⚡","Fartlek Forte":"⚡","Tempo Run":"🔥","Tempo":"🔥",
+  "Tempo Sustentado":"🔥","Longão":"🏃","Longão Leve":"🏃","Intervalado":"🎯",
+  "Ativação":"✨","Moderado":"💪","Progressivo":"📈","Ritmo 10k":"🏁",
+  "Tiros Curtos":"⚡","Pré-teste":"😴","🏆 TESTE 10 KM":"🏆"
+};
+
+// ═══════════════════════════════════════
+//  STATE
+// ═══════════════════════════════════════
+let state = {
+  activeWeek: 0,
+  activeDay: null,
+  view: 'week',
+  results: {},
+  editingKey: null,
+  draftText: ''
+};
+
+function rk(wi, di) { return `w${wi}-d${di}`; }
+const totalWorkouts = PLAN.reduce((s,w) => s + w.days.length, 0);
+
+// ═══════════════════════════════════════
+//  STORAGE
+// ═══════════════════════════════════════
+function loadResults() {
+  try {
+    const raw = localStorage.getItem('running-results');
+    if (raw) state.results = JSON.parse(raw);
+  } catch(e) {}
+}
+function saveResults() {
+  try { localStorage.setItem('running-results', JSON.stringify(state.results)); } catch(e) {}
+}
+
+// ═══════════════════════════════════════
+//  ACTIONS
+// ═══════════════════════════════════════
+function setView(v) {
+  state.view = v;
+  document.getElementById('btn-view-week').className = 'view-btn ' + (v==='week'?'active':'inactive');
+  document.getElementById('btn-view-overview').className = 'view-btn ' + (v==='overview'?'active':'inactive');
+  renderView();
+}
+
+function selectWeek(i) {
+  state.activeWeek = i;
+  state.activeDay = null;
+  state.editingKey = null;
+  state.view = 'week';
+  document.getElementById('btn-view-week').className = 'view-btn active';
+  document.getElementById('btn-view-overview').className = 'view-btn inactive';
+  renderWeekSelector();
+  renderView();
+}
+
+function toggleDay(di) {
+  state.activeDay = state.activeDay === di ? null : di;
+  state.editingKey = null;
+  renderView();
+}
+
+function startEdit(key, current) {
+  state.editingKey = key;
+  state.draftText = current || '';
+  renderView();
+  setTimeout(() => {
+    const ta = document.getElementById('ta-' + key);
+    if (ta) { ta.focus(); ta.setSelectionRange(ta.value.length, ta.value.length); }
+  }, 50);
+}
+
+function cancelEdit() { state.editingKey = null; renderView(); }
+
+function saveResult(key) {
+  const ta = document.getElementById('ta-' + key);
+  if (!ta) return;
+  const val = ta.value.trim();
+  if (val) state.results[key] = val;
+  else delete state.results[key];
+  saveResults();
+  state.editingKey = null;
+  updateProgress();
+  renderWeekSelector();
+  renderView();
+}
+
+function markDone(key) {
+  state.results[key] = '✅ Treino concluído';
+  saveResults();
+  updateProgress();
+  renderWeekSelector();
+  renderView();
+}
+
+function updateProgress() {
+  const done = Object.values(state.results).filter(v => v && v.trim()).length;
+  document.getElementById('progress-count').innerHTML = done + '<span id="progress-total">/' + totalWorkouts + '</span>';
+  document.getElementById('progress-bar').style.width = ((done/totalWorkouts)*100) + '%';
+}
+
+// ═══════════════════════════════════════
+//  RENDER
+// ═══════════════════════════════════════
+function renderWeekSelector() {
+  const el = document.getElementById('week-selector');
+  el.innerHTML = PLAN.map((w, i) => {
+    const weekDone = w.days.filter((_,di) => state.results[rk(i,di)]?.trim()).length;
+    const isActive = state.activeWeek === i;
+    const badgeColor = weekDone === w.days.length ? '#48BB78' : w.theme;
+    const badge = weekDone > 0
+      ? `<span class="week-badge" style="background:${badgeColor}">${weekDone===w.days.length?'✓':weekDone}</span>`
+      : '';
+    return `<button class="week-btn" onclick="selectWeek(${i})"
+      style="background:${isActive?w.theme:'rgba(255,255,255,0.06)'};color:${isActive?'#0A0A0F':'#555'}">
+      S${i+1}${badge}
+    </button>`;
+  }).join('');
+}
+
+function renderView() {
+  const el = document.getElementById('view-container');
+  el.innerHTML = state.view === 'overview' ? renderOverview() : renderWeek();
+}
+
+function renderWeek() {
+  const w = PLAN[state.activeWeek];
+  const wi = state.activeWeek;
+  const doneCnt = w.days.filter((_,di) => state.results[rk(wi,di)]?.trim()).length;
+
+  const weekHeader = `
+    <div class="week-header-card fade-in" style="background:${w.theme}18;border:1px solid ${w.theme}30">
+      <div class="week-header-title" style="color:${w.theme}">${w.label}</div>
+      <div class="week-header-sub">${doneCnt}/${w.days.length} treinos concluídos</div>
+    </div>`;
+
+  const tabs = `<div class="day-tabs fade-in">` + w.days.map((d,di) => {
+    const done = state.results[rk(wi,di)]?.trim();
+    const isAct = state.activeDay === di;
+    const bg = isAct ? DAY_COLORS[d.day] : done ? 'rgba(72,187,120,0.12)' : 'rgba(255,255,255,0.05)';
+    const col = isAct ? '#0A0A0F' : done ? '#48BB78' : '#666';
+    return `<button class="day-tab" onclick="toggleDay(${di})"
+      style="background:${bg};color:${col}">
+      <span class="day-tab-name">${d.day.slice(0,3)}</span>
+      <span class="day-tab-km">${d.distance}</span>
+      ${done && !isAct ? '<span class="day-tab-check">✓</span>' : ''}
+    </button>`;
+  }).join('') + `</div>`;
+
+  const cards = w.days.map((d,di) => renderDayCard(d, wi, di)).join('');
+
+  return weekHeader + tabs + `<div class="fade-in">` + cards + `</div>`;
+}
+
+function renderDayCard(d, wi, di) {
+  const key = rk(wi, di);
+  const done = state.results[key]?.trim();
+  const isOpen = state.activeDay === di;
+  const isEditing = state.editingKey === key;
+  const dc = DAY_COLORS[d.day];
+  const icon = TYPE_ICONS[d.type] || '🏃';
+
+  const body = isOpen ? `
+    <div class="day-body fade-in">
+      <div class="day-divider" style="background:${dc}20"></div>
+      <div class="detail-pills">
+        ${d.details.map(det => `
+          <span class="detail-pill" style="background:${d.typeColor}15;border:1px solid ${d.typeColor}30;color:${d.typeColor}">${det}</span>
+        `).join('')}
+      </div>
+      ${d.structure ? `
+        <div class="section-label">Estrutura</div>
+        <div class="structure-list">
+          ${d.structure.map((s,i) => `
+            <div class="structure-item">
+              <span class="structure-num" style="background:${dc}20;color:${dc}">${i+1}</span>
+              <span class="structure-text">${s}</span>
+            </div>`).join('')}
+        </div>` : ''}
+      ${d.objective ? `
+        <div class="objective-box" style="border-left:3px solid ${dc}60">${d.objective}</div>` : ''}
+      <div class="result-section">
+        <div class="section-label">Resultado do Treino</div>
+        ${isEditing ? `
+          <textarea id="ta-${key}" class="result-text"
+            placeholder="Ex: Pace médio 6:32/km, FC 148bpm. Sensação: ótima 💪"
+          >${state.draftText}</textarea>
+          <div class="result-actions">
+            <button class="btn-save" onclick="saveResult('${key}')">✓ Salvar</button>
+            <button class="btn-cancel" onclick="cancelEdit()">Cancelar</button>
+          </div>
+        ` : done ? `
+          <div class="result-done-box">${escHtml(done)}</div>
+          <button class="btn-edit" onclick="startEdit('${key}','${escJs(done)}')">✏️ Editar</button>
+        ` : `
+          <div class="result-empty">
+            <button class="btn-check" onclick="markDone('${key}')">✓ Concluído</button>
+            <button class="btn-register"
+              style="border:1px solid ${dc}30;background:${dc}10;color:${dc}"
+              onclick="startEdit('${key}','')">📝 Registrar resultado</button>
+          </div>`}
+      </div>
+    </div>` : '';
+
+  return `
+    <div class="day-card" style="border:1px solid ${isOpen ? dc+'50' : 'rgba(255,255,255,0.07)'}">
+      <div class="day-card-header" onclick="toggleDay(${di})">
+        <div class="day-card-left">
+          <div class="day-icon" style="background:${dc}18;border:1.5px solid ${dc}40">${icon}</div>
+          <div>
+            <div class="day-name" style="color:${dc}">${d.day}</div>
+            <div class="day-type">${d.type}</div>
+          </div>
+        </div>
+        <div class="day-card-right">
+          <div style="text-align:right">
+            <div class="day-distance" style="color:${done?'#48BB78':'#F0EEF6'}">${d.distance}</div>
+            ${done ? '<div class="day-done-label">✓ concluído</div>' : ''}
+          </div>
+          <span class="chevron ${isOpen?'open'}">▼</span>
+        </div>
+      </div>
+      ${body}
+    </div>`;
+}
+
+function renderOverview() {
+  const totalKm = PLAN.reduce((s,w) => s + w.days.reduce((ds,d) => ds + parseFloat(d.distance), 0), 0);
+  return `<div class="fade-in">
+    <div class="overview-meta">${totalWorkouts} treinos · ${totalKm.toFixed(0)} km totais estimados</div>
+    ${PLAN.map((w,wi) => `
+      <div class="overview-week">
+        <div class="overview-week-title">
+          <div class="overview-dot" style="background:${w.theme}"></div>
+          <span class="overview-week-name" style="color:${w.theme}">${w.label}</span>
+        </div>
+        <div class="overview-grid">
+          ${w.days.map((d,di) => {
+            const done = state.results[rk(wi,di)]?.trim();
+            return `<div class="overview-card"
+              style="background:${done?'rgba(72,187,120,0.08)':'rgba(255,255,255,0.03)'};border:1px solid ${done?'rgba(72,187,120,0.25)':'rgba(255,255,255,0.06)'}"
+              onclick="selectWeek(${wi});toggleDay(${di})">
+              <div class="overview-card-top">
+                <span class="overview-day" style="color:${DAY_COLORS[d.day]}">${d.day}</span>
+                <span>${done?'✅':'○'}</span>
+              </div>
+              <div class="overview-type">${TYPE_ICONS[d.type]||'🏃'} ${d.type}</div>
+              <div class="overview-km">${d.distance}</div>
+            </div>`;
+          }).join('')}
+        </div>
+      </div>`).join('')}
+  </div>`;
+}
+
+function renderLegend() {
+  document.getElementById('legend-days').innerHTML =
+    Object.entries(DAY_COLORS).map(([day,color]) => `
+      <div class="legend-dot">
+        <div class="legend-dot-circle" style="background:${color}"></div>
+        <span class="legend-dot-text">${day}</span>
+      </div>`).join('');
+  document.getElementById('legend-types').innerHTML =
+    [["Regenerativo 🌱","#4ECDC4"],["Fartlek ⚡","#FFD93D"],["Tempo 🔥","#FF6B6B"],
+     ["Longão 🏃","#A29BFE"],["Intervalado 🎯","#F6AD55"]].map(([l,c]) => `
+      <span class="legend-pill" style="background:${c}18;border:1px solid ${c}30;color:${c}">${l}</span>`
+    ).join('');
+}
+
+// ═══════════════════════════════════════
+//  UTILS
+// ═══════════════════════════════════════
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+function escJs(s) {
+  return String(s).replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/\n/g,'\\n');
+}
+
+// ═══════════════════════════════════════
+//  PWA INSTALL
+// ═══════════════════════════════════════
+let deferredPrompt = null;
+window.addEventListener('beforeinstallprompt', e => {
+  e.preventDefault();
+  deferredPrompt = e;
+  if (!localStorage.getItem('install-dismissed')) {
+    document.getElementById('install-banner').classList.add('show');
+  }
+});
+document.getElementById('btn-install').addEventListener('click', async () => {
+  if (!deferredPrompt) return;
+  deferredPrompt.prompt();
+  const { outcome } = await deferredPrompt.userChoice;
+  if (outcome === 'accepted') localStorage.setItem('install-dismissed','1');
+  document.getElementById('install-banner').classList.remove('show');
+  deferredPrompt = null;
+});
+function dismissInstall() {
+  localStorage.setItem('install-dismissed','1');
+  document.getElementById('install-banner').classList.remove('show');
+}
+
+// ═══════════════════════════════════════
+//  INIT
+// ═══════════════════════════════════════
+loadResults();
+updateProgress();
+renderWeekSelector();
+renderView();
+renderLegend();
+
+// Register service worker
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('sw.js').catch(() => {});
+}
+</script>
+</body>
+</html>
