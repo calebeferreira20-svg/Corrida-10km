@@ -280,6 +280,10 @@
   .delta-pill.up{ color:var(--ok); background:#46D28A15; } .delta-pill.down{ color:var(--z5); background:#F2564B15; }
   .delta-pill.flat{ color:var(--text-3); background:var(--surface-2); }
 
+  .foodsubnav{ display:flex; gap:8px; margin-bottom:18px; background:var(--surface); border:1px solid var(--line); border-radius:12px; padding:4px; }
+  .foodsubbtn{ flex:1; display:flex; align-items:center; justify-content:center; gap:6px; padding:9px 10px; border-radius:9px; font-family:'Archivo',sans-serif; font-weight:700; font-size:11.5px; color:var(--text-3); }
+  .foodsubbtn.on{ background:var(--surface-2); color:var(--gold); }
+
   .daynavrow{ display:flex; align-items:center; justify-content:space-between; gap:14px; margin-bottom:16px; }
   .daynavbtn{ width:38px; height:38px; border-radius:11px; background:var(--surface); border:1px solid var(--line-soft); color:var(--text-2); font-size:16px; flex-shrink:0; }
   .daynavcenter{ text-align:center; }
@@ -1068,6 +1072,14 @@ function dayTotals(dateKey){
   const entries=diary[dateKey]||[];
   return entries.reduce((a,e)=>({ kcal:a.kcal+e.kcal, prot:a.prot+e.prot, carb:a.carb+e.carb, fat:a.fat+e.fat }), {kcal:0,prot:0,carb:0,fat:0});
 }
+// gasto calórico real de TODO treino sincronizado do Strava naquela semana — corrida, bike, musculação, o que for
+function weekTrainingCalories(weekN){
+  const days = DAY_ORDER.map(day=>{
+    const key = isoLocal(sessionDate(weekN, day));
+    return { day, key, kcal: Math.round((store.strava_calories||{})[key] || 0) };
+  });
+  return { total: days.reduce((a,d)=>a+d.kcal,0), days };
+}
 function weekFoodBalance(weekN){
   const week=WEEKS.find(w=>w.n===weekN);
   let consumed=0, target=0, burned=0;
@@ -1449,6 +1461,24 @@ function viewEvolution(){
     </div>
   </div>`;
 
+  {
+    const todayWk = weekDayFor(new Date());
+    const curWeekN = Math.min(Math.max(todayWk?todayWk.weekN:1, 1), WEEKS[WEEKS.length-1].n);
+    const tc = weekTrainingCalories(curWeekN);
+    const maxDay = Math.max(1, ...tc.days.map(d=>d.kcal));
+    h+=`<div class="chartcard">
+      <div class="chart-title">${icon("flame",13)} Gasto calórico em treino · Semana ${curWeekN}</div>
+      <div class="chart-sub">Todo treino que sincroniza do Strava conta aqui — corrida, bike, musculação, o que for. Não é só o que bate com o plano.</div>
+      <div style="font-family:'Archivo',sans-serif;font-weight:800;font-size:30px;color:var(--gold);margin:10px 0 14px">${tc.total}<span style="font-size:13px;color:var(--text-3);font-weight:600"> kcal</span></div>
+      <div style="display:flex;gap:6px;align-items:flex-end;height:64px">
+        ${tc.days.map(d=>`<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:5px;height:100%;justify-content:flex-end">
+          <div style="width:100%;max-width:26px;border-radius:4px 4px 0 0;background:${d.kcal>0?"var(--gold)":"var(--line-soft)"};height:${Math.max(3,Math.round(d.kcal/maxDay*40))}px"></div>
+          <div style="font-family:'JetBrains Mono',monospace;font-size:8.5px;color:var(--text-3)">${d.day.slice(0,3).toUpperCase()}</div>
+        </div>`).join("")}
+      </div>
+    </div>`;
+  }
+
   h+=`<div class="chartcard">
     <div class="chart-title">Treino a treino</div>
     <div class="chart-sub">Ordem cronológica · seta mostra se ficou mais rápido ou mais lento que o último do mesmo tipo (Z2/Z3/Z4/Z5)</div>
@@ -1490,6 +1520,8 @@ function viewEvolution(){
     <div class="panel-body">Pace, FC, km e carga vêm do Strava — cruzados pela data com a sessão do plano. A parte projetada da carga usa sua própria relação real de esforço por km em cada zona, aplicada aos treinos que ainda faltam. Não atualiza sozinho: depois de treinar, é só pedir <b>"sincroniza com o Strava"</b> de novo no chat que eu busco os treinos novos e recalculo tudo.</div>
   </div>`;
 
+  h+=zonesPanelHTML();
+
   document.getElementById("content").innerHTML=h;
 }
 
@@ -1498,7 +1530,7 @@ function header(){
   const days=Math.ceil((RACE_DATE-new Date())/864e5);
   const wk=WEEKS[S.wk];
   const totalKm = WEEKS.reduce((a,w)=>a+w.vol,0);
-  const TABS=[["plan","Treinos"],["evolucao","Evolução"],["musculacao","Musculação"],["cardapio","Cardápio"],["diario","Diário"],["overview","Visão geral"],["fases","Fases"],["zonas","Zonas"],["nutricao","Nutrição"]];
+  const TABS=[["plan","Treinos"],["evolucao","Evolução"],["musculacao","Musculação"],["alimentacao","Alimentação"],["fases","Fases"],["nutricao","Nutrição"]];
 
   document.getElementById("header").innerHTML=`
     ${!STORAGE_OK?`<div style="background:#F2564B;color:#08080A;padding:8px 14px;font-family:'JetBrains Mono',monospace;font-size:11.5px;font-weight:700;text-align:center;display:flex;align-items:center;justify-content:center;gap:7px">${icon("alert",13)}<span>Esse navegador está bloqueando o salvamento — nada vai persistir ao fechar. Veja as dicas abaixo.</span></div>`:""}
@@ -1724,6 +1756,12 @@ function viewStrength(){
   });
   h+=`</div></div>`;
 
+  if(week.tag==="RECUP."){
+    h+=`<div class="pacebox-note" style="margin-bottom:14px">${icon("refresh",11)} Semana de recuperação: reduza ~15-20% da carga em cada exercício abaixo (mesmas reps, menos peso). O RPE listado já assume isso — se ainda estiver puxado, tira mais peso, não é fraqueza.</div>`;
+  } else if(week.isCheckpoint){
+    h+=`<div class="pacebox-note" style="margin-bottom:14px">${icon("target",11)} Semana de checkpoint: se todas as séries do bloco anterior saíram no RPE alvo ou abaixo, é sinal pra subir carga aqui — 2,5-5% já é suficiente pra continuar progredindo.</div>`;
+  }
+
   strengthWeek.forEach(s=>{
     const has=s.ex.length>0, k=`M${wn}_${s.day}`;
     const d=gd(wn,`M-${s.day}`), done=has&&!!d.done, open=S.open.has(k);
@@ -1772,39 +1810,6 @@ function viewStrength(){
     ev.stopPropagation();
     const [w,day]=e.dataset.sdone.split("|");
     const cur=gd(+w,`M-${day}`); set(+w,`M-${day}`,{...cur,done:!cur.done}); render();
-  });
-}
-
-function viewOverview(){
-  let h=`<div class="section-head">
-    <div class="section-eyebrow">Ciclo completo</div>
-    <div class="section-title">${allS().length} treinos até a prova</div>
-  </div>`;
-  WEEKS.forEach((w,wi)=>{
-    const d=w.sessions.filter(s=>gd(w.n,s.day).done).length;
-    const c=w.tag?tagC(w.tag):w.ph.color;
-    h+=`<div class="ovweek">
-      <div class="ovhead">
-        <div style="display:flex;align-items:center;gap:9px">
-          <span class="ovname">Semana ${w.n}</span>
-          ${w.tag?`<span class="zpill" style="background:${c}1F;color:${c}">${w.tag}</span>`:""}
-        </div>
-        <span class="ovmeta">${d}/${w.sessions.length} · ${w.vol} km</span>
-      </div>
-      <div class="ovgrid">`;
-    w.sessions.forEach(s=>{
-      const done=gd(w.n,s.day).done, c2=ZC[s.zone];
-      h+=`<div class="ovcell ${done?"done":""}" data-goto="${wi}|${esc(s.day)}">
-        <div class="ovday" ${done?`style="color:var(--ok)"`:""}>${s.short}</div>
-        <div class="ovkm" style="color:${done?"var(--ok)":c2}">${s.km}</div>
-        <div class="ovtype">${s.type==="race"?"prova":s.type==="quality"?"tiros":s.type==="tempo"?"limiar":s.type==="long"?"longão":"fácil"}</div>
-      </div>`;
-    });
-    h+=`</div></div>`;
-  });
-  document.getElementById("content").innerHTML=h;
-  document.querySelectorAll("[data-goto]").forEach(e=>e.onclick=()=>{
-    const [w,d]=e.dataset.goto.split("|"); S.wk=+w; S.day=d; S.view="plan"; render();
   });
 }
 
@@ -1879,7 +1884,7 @@ function mileagePanel(){
   return h;
 }
 
-function viewZones(){
+function zonesPanelHTML(){
   const zones=[
     { z:"Z1", hr:"< 126", pace:"> 7:00", name:"Recuperação", c:"#4A8B84", d:"Bem leve, quase trote. Regeneração pura." },
     { z:"Z2", hr:"127–157", pace:ZP.z2, name:"Aeróbio leve", c:ZC.z2, d:"Consegue conversar frases inteiras. É a base de tudo — longões e regenerativos." },
@@ -1944,7 +1949,7 @@ function viewZones(){
     <div class="panel-lbl" style="color:var(--gold)">Temperatura importa</div>
     <div class="panel-body">Brasília entre agosto e outubro fica em 26–31°C no horário de treino. Priorize longão e limiar <b>antes das 7h</b> ou à noite — o meio da manhã é onde a temperatura sobe mais rápido e distorce a comparação entre treinos.</div>
   </div>`;
-  document.getElementById("content").innerHTML=h;
+  return h;
 }
 
 function viewNutrition(){
@@ -1987,7 +1992,21 @@ function viewNutrition(){
   document.getElementById("content").innerHTML=h;
 }
 
-function viewDiario(){
+function foodSubnavHTML(){
+  return `<div class="foodsubnav">
+    <button class="foodsubbtn ${S.foodTab!=="cardapio"?"on":""}" data-foodtab="diario">${icon("meal",13)} Diário</button>
+    <button class="foodsubbtn ${S.foodTab==="cardapio"?"on":""}" data-foodtab="cardapio">${icon("chart",13)} Cardápio</button>
+  </div>`;
+}
+function viewAlimentacao(){
+  if(!S.foodTab) S.foodTab="diario";
+  let h=foodSubnavHTML();
+  h += S.foodTab==="cardapio" ? cardapioBodyHTML() : diarioBodyHTML();
+  document.getElementById("content").innerHTML=h;
+  document.querySelectorAll("[data-foodtab]").forEach(b=>b.onclick=()=>{ S.foodTab=b.dataset.foodtab; render(); });
+  if(S.foodTab==="cardapio") wireCardapio(); else wireDiario();
+}
+function diarioBodyHTML(){
   if(!S.diarioDate) S.diarioDate = isoLocal(new Date());
   const date = new Date(S.diarioDate+"T00:00:00");
   const key = S.diarioDate;
@@ -2086,7 +2105,11 @@ function viewDiario(){
     <div class="panel-body">"Consumido" é 100% o que você registrou aqui — nada é assumido. "Meta" é a soma da Opção 1 de cada refeição sugerida pro nível do dia. "Gasto ativo" vem só do treino (Strava), não inclui seu metabolismo basal — não é pra bater exatamente com "meta", é referência pra ver se o padrão real tá muito longe do planejado.</div>
   </div>`;
 
-  document.getElementById("content").innerHTML=h;
+  return h;
+}
+function wireDiario(){
+  const date = new Date(S.diarioDate+"T00:00:00");
+  const key = S.diarioDate;
   document.querySelectorAll("[data-daynav]").forEach(b=>b.onclick=()=>{
     S.diarioDate = isoLocal(addD(date, +b.dataset.daynav));
     render();
@@ -2104,7 +2127,7 @@ function viewDiario(){
   };
 }
 
-function viewCardapio(){
+function cardapioBodyHTML(){
   const week = WEEKS[S.wk];
   let h=`<div class="section-head">
     <div class="section-eyebrow">Nutrição por dia</div>
@@ -2160,7 +2183,9 @@ function viewCardapio(){
     h+=`</div></div>`;
   });
 
-  document.getElementById("content").innerHTML=h;
+  return h;
+}
+function wireCardapio(){
   document.querySelectorAll("[data-wk]").forEach(b=>b.onclick=()=>{ S.wk=+b.dataset.wk; render(); });
   document.querySelectorAll("[data-t]").forEach(e=>e.onclick=()=>{
     const k=e.dataset.t; S.open.has(k)?S.open.delete(k):S.open.add(k); render();
@@ -2169,8 +2194,8 @@ function viewCardapio(){
 
 function render(){
   header();
-  ({ plan:viewPlan, evolucao:viewEvolution, musculacao:viewStrength, cardapio:viewCardapio, diario:viewDiario, overview:viewOverview,
-     fases:viewPhases, zonas:viewZones, nutricao:viewNutrition })[S.view]();
+  ({ plan:viewPlan, evolucao:viewEvolution, musculacao:viewStrength, alimentacao:viewAlimentacao,
+     fases:viewPhases, nutricao:viewNutrition })[S.view]();
 }
 
 function start(){
@@ -2194,7 +2219,7 @@ function start(){
       DB.doc("diario/log").get().then(snap=>{
         if(snap.exists && snap.data()){
           diary = {...snap.data(), ...diary};
-          if(S.view==="diario") render();
+          if(S.view==="alimentacao") render();
           DB.doc("diario/log").set(diary).catch(()=>{});
         } else if(Object.keys(diary).length){
           DB.doc("diario/log").set(diary).catch(()=>{});
