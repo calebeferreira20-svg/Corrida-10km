@@ -243,6 +243,16 @@
   .str-ex{ display:flex; gap:10px; margin-bottom:8px; font-size:11.5px; color:var(--text-2); }
   .str-int{ margin-top:12px; padding-top:11px; border-top:1px solid var(--line); font-size:11px; color:var(--text-3); }
 
+  .chartcard{ background:var(--surface); border:1px solid var(--line-soft); border-radius:14px; padding:17px 16px 12px; margin-bottom:11px; }
+  .chart-title{ font-family:'Archivo',sans-serif; font-weight:800; font-size:14px; margin-bottom:3px; }
+  .chart-sub{ font-size:10.5px; color:var(--text-3); margin-bottom:13px; line-height:1.5; }
+  .chart-legend{ display:flex; gap:14px; margin-bottom:12px; flex-wrap:wrap; }
+  .legend-item{ display:flex; align-items:center; gap:6px; font-family:'JetBrains Mono',monospace; font-size:9.5px; color:var(--text-2); }
+  .legend-swatch{ width:10px; height:10px; border-radius:3px; flex-shrink:0; }
+  .legend-swatch.ghost{ background:transparent; border:1.5px solid var(--text-3); box-sizing:border-box; }
+  .chart-empty{ font-size:11px; color:var(--text-3); text-align:center; padding:30px 10px; line-height:1.6; }
+  .todaypill{ font-family:'JetBrains Mono',monospace; font-size:7.5px; font-weight:800; letter-spacing:.1em; background:var(--gold); color:#08080A; padding:2.5px 6px; border-radius:20px; }
+
   @media (prefers-reduced-motion:reduce){ *{ transition:none !important; } }
   @media (max-width:380px){
     #kpis{ grid-template-columns:1fr 1fr; }
@@ -416,6 +426,9 @@ function fmtDuration(lo,hi){
   return `${minToHM(lo)}-${minToHM(hi)}`;
 }
 function addD(d,n){ const r=new Date(d); r.setDate(r.getDate()+n); return r; }
+const DAY_OFFSET = {Segunda:0,Terça:1,Quarta:2,Quinta:3,Sexta:4,Sábado:5,Domingo:6};
+function sessionDate(weekN,day){ return addD(PLAN_START, (weekN-1)*7 + DAY_OFFSET[day]); }
+function sameDay(a,b){ return a.toDateString()===b.toDateString(); }
 
 const CHECKPOINT_WEEKS = [5, 8, 11];
 const TEST_WEEKS = { 5: "5K", 9: "10K" };
@@ -834,12 +847,120 @@ const allS =()=>WEEKS.flatMap(w=>w.sessions);
 const doneN=()=>{ let n=0; WEEKS.forEach(w=>w.sessions.forEach(s=>{ if(gd(w.n,s.day).done) n++; })); return n; };
 const tagC =t=>t==="PICO"?"#F2564B":t==="TAPER"?"#5B9BF0":t==="PROVA"?"#F5C518":t==="CHECK"?"#B98CE8":"#3DD6C0";
 
+// ── Evolução — cruza o que foi registrado (manual ou sincronizado do Strava) com o plano ──
+function weeksStarted(){
+  const today=new Date();
+  return WEEKS.filter(w=>sessionDate(w.n,"Segunda")<=today);
+}
+function weeklyActualKm(w){
+  let sum=0;
+  w.sessions.forEach(s=>{ const d=gd(w.n,s.day); if(d.realKm) sum+=d.realKm; });
+  return Math.round(sum*10)/10;
+}
+function z2PacePoints(){
+  const pts=[];
+  WEEKS.forEach(w=>{
+    w.sessions.forEach(s=>{
+      if(s.zone!=="z2") return;
+      const d=gd(w.n,s.day);
+      if(d.pace && d.realKm){
+        pts.push({ date:sessionDate(w.n,s.day), pace:paceToDec(d.pace), paceStr:d.pace, label:`${s.short} S${w.n}` });
+      }
+    });
+  });
+  pts.sort((a,b)=>a.date-b.date);
+  return pts;
+}
+function volumeChartSVG(){
+  const weeks=weeksStarted();
+  if(!weeks.length) return `<div class="chart-empty">Ainda sem semanas iniciadas.</div>`;
+  const data=weeks.map(w=>({ n:w.n, planned:w.vol, actual:weeklyActualKm(w) }));
+  const maxV=Math.max(...data.map(d=>Math.max(d.planned,d.actual)), 1);
+  const W=680,H=190,padL=10,padR=10,padT=18,padB=26;
+  const groupW=(W-padL-padR)/data.length;
+  const barW=Math.min(22, groupW*0.26), gap=6;
+  const scaleY=v=>(H-padB)-(v/maxV)*(H-padB-padT);
+  let bars="";
+  data.forEach((d,i)=>{
+    const gx=padL+i*groupW+groupW/2;
+    const x1=gx-gap/2-barW, x2=gx+gap/2;
+    const yP=scaleY(d.planned), yA=scaleY(d.actual);
+    bars+=`<rect x="${x1.toFixed(1)}" y="${yP.toFixed(1)}" width="${barW.toFixed(1)}" height="${((H-padB)-yP).toFixed(1)}" rx="3.5" fill="none" stroke="var(--text-3)" stroke-width="1.5"><title>Semana ${d.n} · planejado ${d.planned}km</title></rect>
+      <rect x="${x2.toFixed(1)}" y="${yA.toFixed(1)}" width="${barW.toFixed(1)}" height="${((H-padB)-yA).toFixed(1)}" rx="3.5" fill="${d.actual>0?"var(--gold)":"var(--line)"}"><title>Semana ${d.n} · realizado ${d.actual}km</title></rect>
+      ${d.actual>0?`<text x="${(x2+barW/2).toFixed(1)}" y="${(yA-6).toFixed(1)}" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="8.5" fill="var(--text-2)">${d.actual}</text>`:""}
+      <text x="${gx.toFixed(1)}" y="${H-8}" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="9" fill="var(--text-3)">S${d.n}</text>`;
+  });
+  return `<svg viewBox="0 0 ${W} ${H}" width="100%" height="${H}" style="overflow:visible">
+    <line x1="${padL}" y1="${H-padB}" x2="${W-padR}" y2="${H-padB}" stroke="var(--line)" stroke-width="1"/>
+    ${bars}
+  </svg>`;
+}
+function paceChartSVG(){
+  const pts=z2PacePoints();
+  if(pts.length<2) return `<div class="chart-empty">Precisa de pelo menos 2 regenerativos/longões com pace registrado pra traçar a curva — hoje tem ${pts.length}.</div>`;
+  const W=680,H=190,padL=14,padR=14,padT=18,padB=26;
+  const minDate=pts[0].date, maxDate=pts[pts.length-1].date;
+  const spanMs=Math.max(1,maxDate-minDate);
+  const zoneLo=paceToDec(ZP.z2.split("–")[0]), zoneHi=paceToDec(ZP.z2.split("–")[1]);
+  const paces=pts.map(p=>p.pace);
+  const minP=Math.min(...paces,zoneLo)-0.2, maxP=Math.max(...paces,zoneHi)+0.2;
+  const scaleX=d=>padL+((d-minDate)/spanMs)*(W-padL-padR);
+  const scaleY=p=>H-padB-((p-minP)/(maxP-minP))*(H-padT-padB);
+  const yZoneLo=scaleY(zoneLo), yZoneHi=scaleY(zoneHi);
+  const pathD=pts.map((p,i)=>`${i===0?"M":"L"} ${scaleX(p.date).toFixed(1)} ${scaleY(p.pace).toFixed(1)}`).join(" ");
+  let dots="";
+  pts.forEach(p=>{
+    const x=scaleX(p.date), y=scaleY(p.pace);
+    dots+=`<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="4" fill="var(--gold)" stroke="var(--bg)" stroke-width="1.5"><title>${p.label} · ${p.paceStr}/km</title></circle>
+      <text x="${x.toFixed(1)}" y="${(y-9).toFixed(1)}" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="8.5" fill="var(--text-2)">${p.paceStr}</text>`;
+  });
+  return `<svg viewBox="0 0 ${W} ${H}" width="100%" height="${H}" style="overflow:visible">
+    <rect x="${padL}" y="${Math.min(yZoneLo,yZoneHi).toFixed(1)}" width="${W-padL-padR}" height="${Math.abs(yZoneHi-yZoneLo).toFixed(1)}" fill="var(--z2)" opacity="0.1"/>
+    <line x1="${padL}" y1="${H-padB}" x2="${W-padR}" y2="${H-padB}" stroke="var(--line)" stroke-width="1"/>
+    <path d="${pathD}" fill="none" stroke="var(--z2)" stroke-width="2"/>
+    ${dots}
+  </svg>`;
+}
+function viewEvolution(){
+  const weeks=weeksStarted();
+  const totalPlanned=Math.round(weeks.reduce((a,w)=>a+w.vol,0));
+  const totalActual=Math.round(weeks.reduce((a,w)=>a+weeklyActualKm(w),0)*10)/10;
+  let h=`<div class="section-head">
+    <div class="section-eyebrow">Strava · Evolução</div>
+    <div class="section-title">Planejado × realizado</div>
+    <div class="section-note">${totalActual} km rodados de ${totalPlanned} km planejados até agora, em ${weeks.length} semana${weeks.length===1?"":"s"} já iniciada${weeks.length===1?"":"s"}.</div>
+  </div>`;
+
+  h+=`<div class="chartcard">
+    <div class="chart-title">Volume semanal</div>
+    <div class="chart-sub">km por semana — contorno é o planejado, cheio é o que rodou de verdade</div>
+    <div class="chart-legend">
+      <span class="legend-item"><span class="legend-swatch ghost"></span>Planejado</span>
+      <span class="legend-item"><span class="legend-swatch" style="background:var(--gold)"></span>Realizado</span>
+    </div>
+    ${volumeChartSVG()}
+  </div>`;
+
+  h+=`<div class="chartcard">
+    <div class="chart-title">Pace regenerativo (Z2)</div>
+    <div class="chart-sub">Cada ponto é um treino fácil ou longão registrado · faixa clara é a zona-alvo (${ZP.z2}/km)</div>
+    ${paceChartSVG()}
+  </div>`;
+
+  h+=`<div class="panel">
+    <div class="panel-lbl" style="color:var(--gold)">Como isso é preenchido</div>
+    <div class="panel-body">Pace, FC e km reais vêm do Strava — cruzados pela data com a sessão do plano. Não atualiza sozinho: depois de treinar, é só pedir <b>"sincroniza com o Strava"</b> de novo no chat que eu busco os treinos novos e preencho aqui.</div>
+  </div>`;
+
+  document.getElementById("content").innerHTML=h;
+}
+
 function header(){
   const all=allS(), dn=doneN(), pct=Math.round(dn/all.length*100);
   const days=Math.ceil((RACE_DATE-new Date())/864e5);
   const wk=WEEKS[S.wk];
   const totalKm = WEEKS.reduce((a,w)=>a+w.vol,0);
-  const TABS=[["plan","Treinos"],["musculacao","Musculação"],["cardapio","Cardápio"],["overview","Visão geral"],["fases","Fases"],["zonas","Zonas"],["nutricao","Nutrição"]];
+  const TABS=[["plan","Treinos"],["evolucao","Evolução"],["musculacao","Musculação"],["cardapio","Cardápio"],["overview","Visão geral"],["fases","Fases"],["zonas","Zonas"],["nutricao","Nutrição"]];
 
   document.getElementById("header").innerHTML=`
     ${!STORAGE_OK?`<div style="background:#F2564B;color:#08080A;padding:8px 14px;font-family:'JetBrains Mono',monospace;font-size:11.5px;font-weight:700;text-align:center">⚠️ Esse navegador está bloqueando o salvamento — nada vai persistir ao fechar. Veja as dicas abaixo.</div>`:""}
@@ -958,6 +1079,7 @@ function viewPlan(){
 function cardHTML(s,wn){
   const c=ZC[s.zone], k=gk(wn,s.day), d=gd(wn,s.day);
   const done=!!d.done, open=S.open.has(k), edit=S.editing===k;
+  const isToday=sameDay(sessionDate(wn,s.day), new Date());
 
   return `<div class="card ${done?"done":""}">
     <div class="card-head" data-t="${k}">
@@ -966,6 +1088,7 @@ function cardHTML(s,wn){
         <div class="card-toprow">
           <span class="daytag">${s.short}</span>
           <span class="card-title">${esc(s.title)}</span>
+          ${isToday?`<span class="todaypill">HOJE</span>`:""}
         </div>
         <div class="card-stats">
           <span class="stat-km">${s.km>0?`${s.km} km`:"🚴 bike"}</span>
@@ -1368,7 +1491,7 @@ function viewCardapio(){
 
 function render(){
   header();
-  ({ plan:viewPlan, musculacao:viewStrength, cardapio:viewCardapio, overview:viewOverview,
+  ({ plan:viewPlan, evolucao:viewEvolution, musculacao:viewStrength, cardapio:viewCardapio, overview:viewOverview,
      fases:viewPhases, zonas:viewZones, nutricao:viewNutrition })[S.view]();
 }
 
