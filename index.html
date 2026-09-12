@@ -1380,8 +1380,11 @@ function start(){
       DB = db;
       DB.doc("progress/store").get().then(snap=>{
         if(snap.exists && snap.data()){
-          store = snap.data();
+          // Mescla o que veio do servidor com qualquer marcação feita localmente
+          // nesse intervalo de carregamento — evita perder cliques rápidos.
+          store = {...snap.data(), ...store};
           render();
+          DB.doc("progress/store").set(store).catch(()=>{});
         } else if(Object.keys(store).length){
           DB.doc("progress/store").set(store).catch(()=>{});
         }
