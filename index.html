@@ -250,18 +250,35 @@
   .legend-item{ display:flex; align-items:center; gap:6px; font-family:'JetBrains Mono',monospace; font-size:9.5px; color:var(--text-2); }
   .legend-swatch{ width:10px; height:10px; border-radius:3px; flex-shrink:0; }
   .legend-swatch.ghost{ background:transparent; border:1.5px solid var(--text-3); box-sizing:border-box; }
-  .chart-empty{ font-size:11px; color:var(--text-3); text-align:center; padding:30px 10px; line-height:1.6; }
+  .chart-empty{ font-size:11px; color:var(--text-3); text-align:center; padding:26px 10px 30px; line-height:1.6; }
+  .chart-empty .ce-ico{ color:var(--line); margin-bottom:8px; }
   .todaypill{ font-family:'JetBrains Mono',monospace; font-size:7.5px; font-weight:800; letter-spacing:.1em; background:var(--gold); color:#08080A; padding:2.5px 6px; border-radius:20px; }
+  .shoe-note{ font-size:10.5px; color:var(--text-3); margin-top:4px; display:flex; align-items:center; gap:5px; }
+
+  .stattiles{ display:grid; grid-template-columns:1.3fr 1fr 1fr; gap:8px; margin-bottom:14px; }
+  .stile{ background:var(--surface); border:1px solid var(--line-soft); border-radius:12px; padding:12px 13px; position:relative; overflow:hidden; }
+  .stile.hero{ background:linear-gradient(160deg,#171408 0%,var(--surface) 68%); border-color:#2E2712; }
+  .stile-lbl{ font-size:9.5px; font-weight:600; color:var(--text-3); margin-bottom:7px; }
+  .stile-val{ font-family:'Archivo',sans-serif; font-weight:800; font-size:18px; letter-spacing:-.02em; font-variant-numeric:tabular-nums; }
+  .stile.hero .stile-val{ font-size:22px; color:var(--gold); }
+  .stile-val .u{ font-size:10.5px; font-weight:500; color:var(--text-3); }
+  .stile-sub{ font-size:9px; color:var(--text-2); margin-top:4px; font-family:'JetBrains Mono',monospace; }
+  .trend{ display:inline-flex; align-items:center; gap:2px; font-weight:700; }
+  .trend.up{ color:var(--ok); } .trend.down{ color:var(--z5); }
+  .spark{ position:absolute; bottom:0; left:0; right:0; height:20px; opacity:.55; }
 
   .logrows{ display:flex; flex-direction:column; gap:2px; }
-  .logrow{ display:flex; align-items:stretch; gap:11px; padding:10px 2px; border-bottom:1px solid var(--line-soft); }
+  .logrow{ display:flex; align-items:center; gap:11px; padding:10px 2px; border-bottom:1px solid var(--line-soft); }
   .logrow:last-child{ border-bottom:none; }
-  .logrow-date{ flex-shrink:0; width:34px; text-align:center; padding-top:1px; }
-  .logrow-d{ font-family:'Archivo',sans-serif; font-weight:800; font-size:12.5px; }
-  .logrow-w{ font-family:'JetBrains Mono',monospace; font-size:7.5px; color:var(--text-3); margin-top:1px; }
   .logrow-main{ flex:1; min-width:0; }
-  .logrow-top{ display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:5px; }
-  .logrow-stats{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; font-family:'JetBrains Mono',monospace; font-size:10.5px; color:var(--text-2); }
+  .logrow-top{ display:flex; align-items:baseline; justify-content:space-between; gap:8px; margin-bottom:5px; }
+  .logrow-meta{ font-size:9.5px; color:var(--text-3); flex-shrink:0; }
+  .logrow-stats{ display:flex; align-items:baseline; gap:9px; flex-wrap:wrap; }
+  .logrow-pace{ font-family:'JetBrains Mono',monospace; font-size:12.5px; font-weight:700; font-variant-numeric:tabular-nums; }
+  .logrow-sub{ font-family:'JetBrains Mono',monospace; font-size:10px; color:var(--text-3); }
+  .delta-pill{ font-family:'JetBrains Mono',monospace; font-size:9.5px; font-weight:700; padding:1.5px 7px; border-radius:20px; }
+  .delta-pill.up{ color:var(--ok); background:#46D28A15; } .delta-pill.down{ color:var(--z5); background:#F2564B15; }
+  .delta-pill.flat{ color:var(--text-3); background:var(--surface-2); }
 
   @media (prefers-reduced-motion:reduce){ *{ transition:none !important; } }
   @media (max-width:380px){
@@ -438,6 +455,40 @@ function fmtDuration(lo,hi){
 function fmtHMS(sec){
   const h=Math.floor(sec/3600), m=Math.floor((sec%3600)/60), s=Math.round(sec%60);
   return h>0 ? `${h}:${String(m).padStart(2,"0")}:${String(s).padStart(2,"0")}` : `${m}:${String(s).padStart(2,"0")}`;
+}
+
+// ── Ícones de linha (substituem emoji) — traço único, herdam cor via currentColor ──
+const ICON_PATHS = {
+  flag:    '<path d="M5 21V4"/><path d="M5 4h11l-1.6 3.5L16 11H5"/>',
+  bike:    '<circle cx="6.3" cy="17" r="3.1"/><circle cx="17.7" cy="17" r="3.1"/><path d="M6.3 17l4-8.5h3.8l3 8.5"/><path d="M9.3 8.5H7.5"/><path d="M14.1 8.5l2.4 5"/>',
+  shoe:    '<path d="M3.2 17.2c0-1.8 1.1-2.8 2.9-3.2l5.7-1.4 3.6-3.2c.9-.8 1.8-.8 2.6 0l.9 3.1c2 .3 3.9 1.2 3.9 3.3v1.4H3.2z"/>',
+  refresh: '<path d="M4.5 12a7.5 7.5 0 0 1 13-5.1L20 9.3"/><path d="M20 4.5v4.8h-4.8"/><path d="M19.5 12a7.5 7.5 0 0 1-13 5.1L4 14.7"/><path d="M4 19.5v-4.8h4.8"/>',
+  ruler:   '<rect x="3.2" y="7.2" width="17.6" height="9.6" rx="1.4"/><path d="M7 7.2v3M11 7.2v4M15 7.2v3M19 7.2v4"/>',
+  pill:    '<rect x="5" y="9.3" width="14" height="5.4" rx="2.7" transform="rotate(-35 12 12)"/><path d="M9.7 14.3l4.6-4.6" transform="rotate(-35 12 12)"/>',
+  alert:   '<path d="M12 3.3l9.3 17.4H2.7z"/><path d="M12 9.8v4"/><circle cx="12" cy="17" r=".55" fill="currentColor" stroke="none"/>',
+  chart:   '<polyline points="3.5 17 9 11.2 12.8 15 20.5 6.3"/><polyline points="14.8 6.3 20.5 6.3 20.5 11.8"/>',
+  flame:   '<path d="M12 3.2c1 2.6-1.7 3.7-1.9 6.2-.1 1.7 1 2.8 2.4 2.8 1.7 0 2.6-1.4 2.4-3 1.1 1 1.7 2.5 1.7 4a4.6 4.6 0 0 1-9.2 0c0-3.6 2.9-5.3 4.6-10z"/>',
+  target:  '<circle cx="12" cy="12" r="8.3"/><circle cx="12" cy="12" r="4.2"/><circle cx="12" cy="12" r=".6" fill="currentColor" stroke="none"/>',
+  clock:   '<circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3.2 2"/>',
+};
+function icon(name, size){
+  size=size||14;
+  return `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-3px;flex-shrink:0">${ICON_PATHS[name]||""}</svg>`;
+}
+// separa um prefixo de emoji conhecido do título, devolvendo o ícone equivalente pra render
+function titleWithIcon(title){
+  if(title.indexOf("🏁")===0) return { iconName:"flag", text:title.replace(/^🏁\s*/,"") };
+  if(title.indexOf("🚴")===0) return { iconName:"bike", text:title.replace(/^🚴\s*/,"") };
+  return { iconName:null, text:title };
+}
+function ringSVG(pct, color, label){
+  const r=13, circ=2*Math.PI*r, clamped=Math.max(0,Math.min(1,pct));
+  const dash=(circ*clamped).toFixed(1);
+  return `<svg width="32" height="32" viewBox="0 0 32 32" style="flex-shrink:0">
+    <circle cx="16" cy="16" r="${r}" fill="none" stroke="var(--line-soft)" stroke-width="3"/>
+    <circle cx="16" cy="16" r="${r}" fill="none" stroke="${color}" stroke-width="3" stroke-dasharray="${dash} ${circ.toFixed(1)}" stroke-linecap="round" transform="rotate(-90 16 16)"/>
+    <text x="16" y="19.5" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="9" font-weight="700" fill="var(--text)">${label}</text>
+  </svg>`;
 }
 
 // ── Previsão de prova — só com dados próprios, sem comparar com outros atletas (nada de Strava aqui) ──
@@ -908,6 +959,31 @@ function weeksStarted(){
   const today=new Date();
   return WEEKS.filter(w=>sessionDate(w.n,"Segunda")<=today);
 }
+// sequência de dias consecutivos com pelo menos um treino (corrida ou força) marcado concluído
+function computeStreak(){
+  const doneDates=new Set();
+  WEEKS.forEach(w=>{
+    w.sessions.forEach(s=>{ if(gd(w.n,s.day).done) doneDates.add(isoLocal(sessionDate(w.n,s.day))); });
+    getStrengthForWeek(w.ph.freq).forEach(sd=>{ if(sd.ex.length>0 && gd(w.n,`M-${sd.day}`).done) doneDates.add(isoLocal(sessionDate(w.n,sd.day))); });
+  });
+  let cur=0, d=new Date(); d.setHours(0,0,0,0);
+  while(doneDates.has(isoLocal(d))){ cur++; d=addD(d,-1); }
+  const sorted=[...doneDates].sort();
+  let best=0, run=0, prev=null;
+  sorted.forEach(ds=>{
+    const dt=new Date(ds+"T00:00:00");
+    run = (prev && sameDay(addD(prev,1),dt)) ? run+1 : 1;
+    best=Math.max(best,run); prev=dt;
+  });
+  return { current:cur, best };
+}
+function sparklineSVG(values, color){
+  if(values.length<2) return "";
+  const min=Math.min(...values), max=Math.max(...values), span=Math.max(1,max-min);
+  const W=200,H=40;
+  const pts=values.map((v,i)=>`${(i/(values.length-1)*W).toFixed(1)},${(H-((v-min)/span)*H).toFixed(1)}`).join(" L");
+  return `<svg class="spark" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none"><path d="M${pts}" fill="none" stroke="${color}" stroke-width="2"/></svg>`;
+}
 function weeklyActualKm(w){
   let sum=0;
   w.sessions.forEach(s=>{ const d=gd(w.n,s.day); if(d.realKm) sum+=d.realKm; });
@@ -945,7 +1021,7 @@ function loggedSessions(){
 }
 function sessionLogListHTML(){
   const rows=loggedSessions();
-  if(!rows.length) return `<div class="chart-empty">Nenhum treino com km real registrado ainda.</div>`;
+  if(!rows.length) return `<div class="chart-empty"><div class="ce-ico">${icon("chart",22)}</div>Nenhum treino com km real registrado ainda.</div>`;
   // pace anterior no MESMO tipo de zona, pra mostrar a evolução treino a treino
   const lastPaceByZone={};
   let h="";
@@ -956,27 +1032,25 @@ function sessionLogListHTML(){
       const diffSec=Math.round((lastPaceByZone[r.zone]-r.paceDec)*60); // positivo = ficou mais rápido
       if(diffSec!==0){
         const faster=diffSec>0;
-        delta=`<span style="font-family:'JetBrains Mono',monospace;font-size:9.5px;font-weight:700;color:${faster?"var(--ok)":"var(--z5)"}">${faster?"▼":"▲"} ${Math.abs(diffSec)}s/km</span>`;
+        delta=`<span class="delta-pill ${faster?"up":"down"}">${faster?"▼":"▲"} ${Math.abs(diffSec)}s/km</span>`;
       } else {
-        delta=`<span style="font-family:'JetBrains Mono',monospace;font-size:9.5px;color:var(--text-3)">= pace</span>`;
+        delta=`<span class="delta-pill flat">= pace</span>`;
       }
     }
     if(r.paceDec!=null) lastPaceByZone[r.zone]=r.paceDec;
+    const T=titleWithIcon(r.title);
+    const pct = r.plannedKm>0 ? r.realKm/r.plannedKm : 1;
+    const dayNum = String(r.date.getDate()).padStart(2,"0");
     h+=`<div class="logrow">
-      <div class="logrow-date">
-        <div class="logrow-d">${String(r.date.getDate()).padStart(2,"0")}/${String(r.date.getMonth()+1).padStart(2,"0")}</div>
-        <div class="logrow-w">S${r.week}</div>
-      </div>
-      <div class="zstripe" style="background:${c}"></div>
+      ${ringSVG(pct, c, dayNum)}
       <div class="logrow-main">
         <div class="logrow-top">
-          <span class="card-title" style="font-size:12.5px">${esc(r.title)}</span>
-          <span class="zpill" style="background:${c}1F;color:${c}">${ZL[r.zone]}</span>
+          <span class="card-title" style="font-size:12.5px;display:flex;align-items:center;gap:5px">${T.iconName?`<span style="color:${c}">${icon(T.iconName,12)}</span>`:""}${esc(T.text)}</span>
+          <span class="logrow-meta">${r.short} · S${r.week}</span>
         </div>
         <div class="logrow-stats">
-          <span>${r.realKm}km${r.plannedKm>0?` <span style="color:var(--text-3)">/ ${r.plannedKm} planejado</span>`:""}</span>
-          ${r.pace?`<span style="color:${c}">${r.pace}/km</span>`:""}
-          ${r.fc?`<span style="color:var(--text-3)">FC ${r.fc}</span>`:""}
+          <span class="logrow-pace" style="color:${c}">${r.pace?`${r.pace}/km`:`${r.realKm}km`}</span>
+          <span class="logrow-sub">${r.realKm}${r.plannedKm>0?`/${r.plannedKm}`:""}km${r.fc?` · FC ${r.fc}`:""}</span>
           ${delta}
         </div>
       </div>
@@ -1062,7 +1136,7 @@ function loadChartSVG(){
 }
 function volumeChartSVG(){
   const weeks=weeksStarted();
-  if(!weeks.length) return `<div class="chart-empty">Ainda sem semanas iniciadas.</div>`;
+  if(!weeks.length) return `<div class="chart-empty"><div class="ce-ico">${icon("chart",22)}</div>Ainda sem semanas iniciadas.</div>`;
   const data=weeks.map(w=>({ n:w.n, planned:w.vol, actual:weeklyActualKm(w) }));
   const maxV=Math.max(...data.map(d=>Math.max(d.planned,d.actual)), 1);
   const W=680,H=190,padL=10,padR=10,padT=18,padB=26;
@@ -1075,7 +1149,7 @@ function volumeChartSVG(){
     const x1=gx-gap/2-barW, x2=gx+gap/2;
     const yP=scaleY(d.planned), yA=scaleY(d.actual);
     bars+=`<rect x="${x1.toFixed(1)}" y="${yP.toFixed(1)}" width="${barW.toFixed(1)}" height="${((H-padB)-yP).toFixed(1)}" rx="3.5" fill="none" stroke="var(--text-3)" stroke-width="1.5"><title>Semana ${d.n} · planejado ${d.planned}km</title></rect>
-      <rect x="${x2.toFixed(1)}" y="${yA.toFixed(1)}" width="${barW.toFixed(1)}" height="${((H-padB)-yA).toFixed(1)}" rx="3.5" fill="${d.actual>0?"var(--gold)":"var(--line)"}"><title>Semana ${d.n} · realizado ${d.actual}km</title></rect>
+      <rect x="${x2.toFixed(1)}" y="${yA.toFixed(1)}" width="${barW.toFixed(1)}" height="${((H-padB)-yA).toFixed(1)}" rx="3.5" fill="${d.actual>0?"var(--ok)":"var(--line)"}"><title>Semana ${d.n} · realizado ${d.actual}km</title></rect>
       ${d.actual>0?`<text x="${(x2+barW/2).toFixed(1)}" y="${(yA-6).toFixed(1)}" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="8.5" fill="var(--text-2)">${d.actual}</text>`:""}
       <text x="${gx.toFixed(1)}" y="${H-8}" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="9" fill="var(--text-3)">S${d.n}</text>`;
   });
@@ -1086,7 +1160,7 @@ function volumeChartSVG(){
 }
 function paceChartSVG(){
   const pts=z2PacePoints();
-  if(pts.length<2) return `<div class="chart-empty">Precisa de pelo menos 2 regenerativos/longões com pace registrado pra traçar a curva — hoje tem ${pts.length}.</div>`;
+  if(pts.length<2) return `<div class="chart-empty"><div class="ce-ico">${icon("chart",22)}</div>Precisa de pelo menos 2 regenerativos/longões com pace registrado pra traçar a curva — hoje tem ${pts.length}.</div>`;
   const W=680,H=190,padL=14,padR=14,padT=18,padB=26;
   const minDate=pts[0].date, maxDate=pts[pts.length-1].date;
   const spanMs=Math.max(1,maxDate-minDate);
@@ -1114,10 +1188,44 @@ function viewEvolution(){
   const weeks=weeksStarted();
   const totalPlanned=Math.round(weeks.reduce((a,w)=>a+w.vol,0));
   const totalActual=Math.round(weeks.reduce((a,w)=>a+weeklyActualKm(w),0)*10)/10;
+
+  // pré-calcula tudo que os tiles do topo precisam
+  const fitSeries=computeFitness(buildLoadSeries());
+  const now=new Date();
+  const lastReal=[...fitSeries].reverse().find(p=>sameDay(p.date,now)) || [...fitSeries].reverse().find(p=>!p.projected) || fitSeries[0];
+  const ctlSpark=fitSeries.filter(p=>!p.projected).slice(-14).map(p=>p.ctl);
+  const streak=computeStreak();
+  const z2pts=z2PacePoints();
+  const lastZ2=z2pts[z2pts.length-1], prevZ2=z2pts[z2pts.length-2];
+  let z2Trend="";
+  if(lastZ2 && prevZ2){
+    const diff=Math.round((prevZ2.pace-lastZ2.pace)*60);
+    if(diff!==0) z2Trend=`<span class="trend ${diff>0?"up":"down"}">${diff>0?"▼":"▲"} ${Math.abs(diff)}s</span> vs. anterior`;
+  }
+
   let h=`<div class="section-head">
     <div class="section-eyebrow">Strava · Evolução</div>
     <div class="section-title">Planejado × realizado</div>
     <div class="section-note">${totalActual} km rodados de ${totalPlanned} km planejados até agora, em ${weeks.length} semana${weeks.length===1?"":"s"} já iniciada${weeks.length===1?"":"s"}.</div>
+  </div>`;
+
+  h+=`<div class="stattiles">
+    <div class="stile hero">
+      <div class="stile-lbl">Fitness agora</div>
+      <div class="stile-val">${lastReal.ctl}</div>
+      <div class="stile-sub">${lastReal.tsb>=0?`<span class="trend up">forma +${lastReal.tsb}</span>`:`<span class="trend down">forma ${lastReal.tsb}</span>`}</div>
+      ${sparklineSVG(ctlSpark,"var(--gold)")}
+    </div>
+    <div class="stile">
+      <div class="stile-lbl">Sequência</div>
+      <div class="stile-val">${streak.current}<span class="u">d</span></div>
+      <div class="stile-sub">recorde: ${streak.best}d</div>
+    </div>
+    <div class="stile">
+      <div class="stile-lbl">Pace Z2</div>
+      <div class="stile-val">${lastZ2?lastZ2.paceStr:"—"}<span class="u">${lastZ2?"/km":""}</span></div>
+      <div class="stile-sub">${z2Trend||"sem comparação ainda"}</div>
+    </div>
   </div>`;
 
   h+=`<div class="chartcard">
@@ -1131,7 +1239,7 @@ function viewEvolution(){
     <div class="chart-sub">km por semana — contorno é o planejado, cheio é o que rodou de verdade</div>
     <div class="chart-legend">
       <span class="legend-item"><span class="legend-swatch ghost"></span>Planejado</span>
-      <span class="legend-item"><span class="legend-swatch" style="background:var(--gold)"></span>Realizado</span>
+      <span class="legend-item"><span class="legend-swatch" style="background:var(--ok)"></span>Realizado</span>
     </div>
     ${volumeChartSVG()}
   </div>`;
@@ -1141,10 +1249,6 @@ function viewEvolution(){
     <div class="chart-sub">Cada ponto é um treino fácil ou longão registrado · faixa clara é a zona-alvo (${ZP.z2}/km)</div>
     ${paceChartSVG()}
   </div>`;
-
-  const fitSeries=computeFitness(buildLoadSeries());
-  const now=new Date();
-  const lastReal=[...fitSeries].reverse().find(p=>sameDay(p.date,now)) || [...fitSeries].reverse().find(p=>!p.projected) || fitSeries[0];
   const atRace=fitSeries[fitSeries.length-1];
   h+=`<div class="chartcard">
     <div class="chart-title">Carga de treino — fitness, fadiga e forma</div>
@@ -1156,7 +1260,6 @@ function viewEvolution(){
     </div>
     ${loadChartSVG()}
     <div class="pacebox-note" style="margin-top:12px">
-      Hoje: fitness ${lastReal.ctl}, fadiga ${lastReal.atl}, forma ${lastReal.tsb>0?"+":""}${lastReal.tsb}.
       Se você cumprir o plano dali pra frente, a projeção chega no dia da prova com fitness em torno de <b>${atRace.ctl}</b> e forma de <b>${atRace.tsb>0?"+":""}${atRace.tsb}</b> — ${atRace.tsb>=0?"forma positiva, exatamente o efeito esperado do taper: chegar fresco na largada.":"forma bem mais alta que durante o volume pesado — o taper reduz a fadiga acumulada mesmo sem cruzar pra positivo."}
     </div>
   </div>`;
@@ -1177,7 +1280,7 @@ function header(){
   const TABS=[["plan","Treinos"],["evolucao","Evolução"],["musculacao","Musculação"],["cardapio","Cardápio"],["overview","Visão geral"],["fases","Fases"],["zonas","Zonas"],["nutricao","Nutrição"]];
 
   document.getElementById("header").innerHTML=`
-    ${!STORAGE_OK?`<div style="background:#F2564B;color:#08080A;padding:8px 14px;font-family:'JetBrains Mono',monospace;font-size:11.5px;font-weight:700;text-align:center">⚠️ Esse navegador está bloqueando o salvamento — nada vai persistir ao fechar. Veja as dicas abaixo.</div>`:""}
+    ${!STORAGE_OK?`<div style="background:#F2564B;color:#08080A;padding:8px 14px;font-family:'JetBrains Mono',monospace;font-size:11.5px;font-weight:700;text-align:center;display:flex;align-items:center;justify-content:center;gap:7px">${icon("alert",13)}<span>Esse navegador está bloqueando o salvamento — nada vai persistir ao fechar. Veja as dicas abaixo.</span></div>`:""}
     <div class="brandrow">
       <div>
         <div class="eyebrow">Meia Maratona · Brasília</div>
@@ -1185,7 +1288,7 @@ function header(){
         <div class="subtitle">Domingo, 22 de novembro de 2026</div>
       </div>
       <div class="countdown">
-        <div class="cd-num">${days>0?days:"🏁"}</div>
+        <div class="cd-num">${days>0?days:icon("flag",30)}</div>
         <div class="cd-lbl">${days>0?"dias":"é hoje"}</div>
       </div>
     </div>
@@ -1244,7 +1347,7 @@ function viewPlan(){
 
   if(wk.isCheckpoint){
     h+=`<div class="panel" style="border-color:#B98CE855;background:linear-gradient(135deg,#B98CE812,transparent);margin-bottom:18px">
-      <div class="panel-lbl" style="color:#B98CE8">🔄 Checkpoint de recalibração</div>
+      <div class="panel-lbl" style="color:#B98CE8">${icon("refresh",12)} Checkpoint de recalibração</div>
       <div class="panel-body">
         4 semanas de Consolidação prontas — é a hora de revisar as zonas com dado real de Brasília, não mais extrapolado do Rio.<br><br>
         <b>Volta no chat e pede pra recalibrar</b>, levando os treinos dessas últimas 4 semanas. A gente ajusta Z2/Z3/Z4/Z5 e o pace-alvo da prova com base no que você realmente rodou aqui, não no PR de agosto.
@@ -1294,6 +1397,7 @@ function cardHTML(s,wn){
   const c=ZC[s.zone], k=gk(wn,s.day), d=gd(wn,s.day);
   const done=!!d.done, open=S.open.has(k), edit=S.editing===k;
   const isToday=sameDay(sessionDate(wn,s.day), new Date());
+  const T=titleWithIcon(s.title);
 
   return `<div class="card ${done?"done":""}">
     <div class="card-head" data-t="${k}">
@@ -1301,16 +1405,17 @@ function cardHTML(s,wn){
       <div class="card-main">
         <div class="card-toprow">
           <span class="daytag">${s.short}</span>
-          <span class="card-title">${esc(s.title)}</span>
+          ${T.iconName?`<span style="color:${c}">${icon(T.iconName,13)}</span>`:""}
+          <span class="card-title">${esc(T.text)}</span>
           ${isToday?`<span class="todaypill">HOJE</span>`:""}
         </div>
         <div class="card-stats">
-          <span class="stat-km">${s.km>0?`${s.km} km`:"🚴 bike"}</span>
+          <span class="stat-km">${s.km>0?`${s.km} km`:`${icon("bike",12)} bike`}</span>
           <span class="zpill" style="background:${c}1F;color:${c}">${ZL[s.zone]}</span>
           <span class="stat-pace" style="color:${c}">${ZP[s.zone]}/km</span>
-          ${(s.timeMin!=null)?`<span style="font-family:'JetBrains Mono',monospace;font-size:10.5px;color:var(--text-3)">⏱ ${fmtDuration(s.timeMin,s.timeMax)}</span>`:""}
+          ${(s.timeMin!=null)?`<span style="font-family:'JetBrains Mono',monospace;font-size:10.5px;color:var(--text-3)">${icon("clock",10)} ${fmtDuration(s.timeMin,s.timeMax)}</span>`:""}
         </div>
-        ${s.shoe?`<div style="font-size:10.5px;color:var(--text-3);margin-top:4px">👟 ${esc(s.shoe)}</div>`:""}
+        ${s.shoe?`<div class="shoe-note">${icon("shoe",12)} ${esc(s.shoe)}</div>`:""}
       </div>
       <div class="card-right">
         <span class="chev ${open?"open":""}">▼</span>
@@ -1583,7 +1688,7 @@ function viewZones(){
   const raceLo = paceToDec(ZP.z3.split("–")[0]) * 21.1;
   const raceHi = paceToDec(ZP.z3.split("–")[1]) * 21.1;
   h+=`<div class="panel" style="border-color:#B98CE855;background:linear-gradient(135deg,#B98CE812,transparent)">
-    <div class="panel-lbl" style="color:#B98CE8">🔄 Ritmo atual projetado pra prova — campo vivo</div>
+    <div class="panel-lbl" style="color:#B98CE8">${icon("refresh",12)} Ritmo atual projetado pra prova — campo vivo</div>
     <div class="panel-body">
       Pace de prova hoje: <b>${ZP.z3}/km</b> → projeção de <b>${minToHM(raceLo)} a ${minToHM(raceHi)}</b> (meio-termo ~${minToHM(raceTimeMid)}).<br><br>
       Esse número <b>não é fixo</b> — ele atualiza a cada checkpoint (S5, S8, S11) e principalmente depois dos testes de 5K (S5) e 10K (S9). Não é "o pace de novembro definido hoje", é a melhor estimativa com o dado que existe agora.
@@ -1598,7 +1703,7 @@ function viewZones(){
     const vdotHalf=timeForDistanceAtVDOT(vdot, 21.1);
     const vdot10k=timeForDistanceAtVDOT(vdot, 10);
     h+=`<div class="panel" style="border-color:${ZC.z4}40">
-      <div class="panel-lbl" style="color:${ZC.z4}">📐 Previsão por fórmula — sem comparar com outros atletas</div>
+      <div class="panel-lbl" style="color:${ZC.z4}">${icon("ruler",12)} Previsão por fórmula — sem comparar com outros atletas</div>
       <div class="panel-body">
         Baseado só em <b>${pr.source}</b> — nenhum dado de população do Strava entra aqui, só duas fórmulas matemáticas aplicadas ao seu próprio desempenho:<br><br>
         <b>Riegel</b> <span style="color:var(--text-3)">(T₂=T₁·(D₂/D₁)^1.06)</span> → meia maratona em <b style="color:${ZC.z4}">${fmtHMS(riegelHalf)}</b> · 10K em <b>${fmtHMS(riegel10k)}</b><br>
@@ -1707,10 +1812,10 @@ function viewCardapio(){
       h+=`</div>`;
     });
     if(tier==="Forte"||tier==="Taper"){
-      h+=`<div class="pacebox-note" style="margin-top:2px">💊 Se o treino do dia passar de 60-70min (limiar/longão), leva 1 sachê de carbogel a cada 45-60min durante o treino — não substitui as refeições, é reposição intra-treino.</div>`;
+      h+=`<div class="pacebox-note" style="margin-top:2px">${icon("pill",11)} Se o treino do dia passar de 60-70min (limiar/longão), leva 1 sachê de carbogel a cada 45-60min durante o treino — não substitui as refeições, é reposição intra-treino.</div>`;
     }
     if(tier==="Carga de Carboidrato"){
-      h+=`<div class="pacebox-note" style="margin-top:2px">🔄 Treino baixo de propósito nesses 3 dias — é isso que permite o corpo estocar glicogênio em vez de gastar. A comida parece pesada pro esforço do dia mesmo: é a ideia. Volta pro normal só depois da prova de domingo.</div>`;
+      h+=`<div class="pacebox-note" style="margin-top:2px">${icon("refresh",11)} Treino baixo de propósito nesses 3 dias — é isso que permite o corpo estocar glicogênio em vez de gastar. A comida parece pesada pro esforço do dia mesmo: é a ideia. Volta pro normal só depois da prova de domingo.</div>`;
     }
     h+=`</div></div>`;
   });
