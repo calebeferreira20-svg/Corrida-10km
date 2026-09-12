@@ -3,14 +3,14 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<title>Meia Maratona Brasília · 22.11.26</title>
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Meia BSB">
 <meta name="theme-color" content="#08080A">
-<link rel="manifest" href="manifest.json">
-<link rel="apple-touch-icon" href="icons/icon-192.png">
-<title>Meia Maratona Brasília · 22.11.26</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800;900&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
@@ -32,31 +32,23 @@
     --ok:        #46D28A;
   }
   *{ box-sizing:border-box; margin:0; padding:0; }
-  html{ background:var(--bg); }
   body{
     min-height:100vh; background:var(--bg); color:var(--text);
     font-family:'Inter',system-ui,sans-serif;
     font-size:13px; line-height:1.5;
-    padding-bottom:calc(80px + env(safe-area-inset-bottom));
+    padding-bottom:40px;
     -webkit-tap-highlight-color:transparent;
     -webkit-font-smoothing:antialiased;
-    overscroll-behavior-y:none;
   }
   button,input{ font-family:inherit; font-size:inherit; color:inherit; }
-  button{ -webkit-appearance:none; appearance:none; border:none; background:none; cursor:pointer; touch-action:manipulation; }
+  button{ -webkit-appearance:none; appearance:none; border:none; background:none; cursor:pointer; }
   :focus-visible{ outline:2px solid var(--gold); outline-offset:2px; border-radius:4px; }
   .wrap{ max-width:760px; margin:0 auto; }
-
-  /* app-like tap feedback */
-  .card-head, .check, .wk, .dayf, .ovcell, .progcol, .navitem, .btn-primary, .btn-ghost, .str-head{ touch-action:manipulation; }
-  .card-head:active, .check:active, .wk:active, .dayf:active, .ovcell:active, .navitem:active, .btn-primary:active, .btn-ghost:active, .str-head:active{
-    transform:scale(.97); transition:transform .1s;
-  }
 
   #header{
     background:linear-gradient(180deg,#0D0D11 0%,#08080A 100%);
     border-bottom:1px solid var(--line);
-    padding:calc(22px + env(safe-area-inset-top)) 18px 0;
+    padding:22px 18px 0;
     position:sticky; top:0; z-index:80;
   }
   .brandrow{ display:flex; align-items:flex-start; justify-content:space-between; gap:16px; margin-bottom:20px; }
@@ -88,6 +80,17 @@
   .kpi-sub{ font-size:9.5px; color:var(--text-3); margin-top:4px; }
   .kpi-bar{ height:3px; background:var(--surface-2); border-radius:2px; margin-top:8px; overflow:hidden; }
   .kpi-bar span{ display:block; height:100%; background:var(--gold); border-radius:2px; transition:width .5s; }
+
+  #tabs{ display:flex; overflow-x:auto; gap:2px; scrollbar-width:none; }
+  #tabs::-webkit-scrollbar{ display:none; }
+  .tab{
+    flex-shrink:0; padding:13px 14px 12px;
+    font-family:'Archivo',sans-serif; font-weight:700;
+    font-size:10.5px; letter-spacing:.08em; text-transform:uppercase;
+    color:var(--text-3); border-bottom:2.5px solid transparent;
+    transition:color .18s;
+  }
+  .tab.on{ color:var(--gold); border-bottom-color:var(--gold); }
 
   #content{ padding:20px 18px 0; }
 
@@ -240,31 +243,6 @@
   .str-ex{ display:flex; gap:10px; margin-bottom:8px; font-size:11.5px; color:var(--text-2); }
   .str-int{ margin-top:12px; padding-top:11px; border-top:1px solid var(--line); font-size:11px; color:var(--text-3); }
 
-  /* ── bottom app nav ── */
-  #bottomnav{
-    position:fixed; left:0; right:0; bottom:0; z-index:200;
-    background:rgba(10,10,12,.9);
-    -webkit-backdrop-filter:blur(20px); backdrop-filter:blur(20px);
-    border-top:1px solid var(--line);
-    padding:7px 0 calc(7px + env(safe-area-inset-bottom));
-  }
-  .navwrap{
-    max-width:760px; margin:0 auto;
-    display:flex; overflow-x:auto; scrollbar-width:none; gap:1px; padding:0 4px;
-  }
-  .navwrap::-webkit-scrollbar{ display:none; }
-  .navitem{
-    flex:1 0 auto; min-width:60px;
-    display:flex; flex-direction:column; align-items:center; gap:3px;
-    padding:6px 8px 5px; border-radius:12px; color:var(--text-3);
-    transition:color .15s;
-  }
-  .navitem .navicon{ font-size:17px; line-height:1; }
-  .navitem .navlbl{ font-family:'JetBrains Mono',monospace; font-size:8px; letter-spacing:.04em; text-transform:uppercase; font-weight:600; white-space:nowrap; }
-  .navitem.on{ color:var(--gold); }
-  .navitem.on .navdot{ opacity:1; }
-  .navdot{ width:3px; height:3px; border-radius:50%; background:var(--gold); opacity:0; margin-top:1px; }
-
   @media (prefers-reduced-motion:reduce){ *{ transition:none !important; } }
   @media (max-width:380px){
     #kpis{ grid-template-columns:1fr 1fr; }
@@ -275,11 +253,11 @@
 </style>
 </head>
 <body>
+
 <div class="wrap">
   <div id="header"></div>
   <div id="content"></div>
 </div>
-<div id="bottomnav"></div>
 
 <script>
 const RACE_DATE  = new Date("2026-11-22T06:00:00");
@@ -289,16 +267,6 @@ const ZC = { z2:"#3DD6C0", z3:"#5B9BF0", z4:"#F5A623", z5:"#F2564B" };
 const ZL = { z2:"Z2", z3:"Z3", z4:"Z4", z5:"Z5" };
 const ZHR= { z2:"127–157", z3:"158–173", z4:"174–188", z5:"189+" };
 const ZP = { z2:"6:30–7:00", z3:"5:40–6:05", z4:"5:00–5:25", z5:"4:35–5:00" };
-
-const TABS=[
-  ["plan","Treinos","🏃"],
-  ["musculacao","Força","🏋️"],
-  ["cardapio","Cardápio","🍽️"],
-  ["overview","Visão","📊"],
-  ["fases","Fases","🧭"],
-  ["zonas","Zonas","💓"],
-  ["nutricao","Nutrição","🥗"],
-];
 
 const PHASES = [
   { id:"B", label:"Consolidação",  weeks:4, freq:5, v0:48, v1:58, color:"#3DD6C0",
@@ -318,49 +286,43 @@ const PATTERNS = {
 
 const TMETA = { easy:{ z:"z2" }, quality:{ z:"z5" }, tempo:{ z:"z4" }, long:{ z:"z2" }, race:{ z:"z3" } };
 
-// Rotação dos 4 tênis que você já tem — Drive RC, Adios Pro 4 e Grafeno 3 entram quando destravar as metas
 const SHOE_MAP = {
   easy:    "Corre 4",
   long:    "New Balance Rebel V5",
 };
 
-// Banco de treinos de intervalado variados — giram a cada semana, pra não ficar repetitivo
-// Cada variante recebe `core` (km de trabalho+recuperação, sem aquecimento/desaquecimento) e devolve
-// a estrutura JÁ CALCULADA pra bater com esse orçamento — nada de número fixo desconectado do km real.
 function roundTo(km, stepM){ return Math.round(km*1000/stepM)*stepM/1000; }
 function fmtM(km){ return `${Math.round(km*1000)}m`; }
 
-// Paces em decimal (min/km), extremos de cada zona — usados pra calcular tempo, não só distância
 const PACE_MIN = {
   z2:  [6.5, 7.0],
   z3:  [5.667, 6.083],
   z4:  [5.0, 5.417],
   z5:  [4.583, 5.0],
-  rec: [7.5, 8.0],   // trote de recuperação entre tiros — mais lento que Z2
+  rec: [7.5, 8.0],
 };
 function segTime(km, paceRange){ return [km*paceRange[0], km*paceRange[1]]; }
 function sumRanges(...ranges){ return [ranges.reduce((a,r)=>a+r[0],0), ranges.reduce((a,r)=>a+r[1],0)]; }
 
 const QUALITY_BANK = [
   { name:"Pirâmide", make:(core)=>{
-    // proporção 1-2-3-3-2-1, recuperação igual ao tiro → 24 unidades no total
     const unit = roundTo(core/24, 50);
     const reps = [1,2,3,3,2,1].map(m=>Math.round(unit*m*1000)/1000);
     const workKm = reps.reduce((a,b)=>a+b,0);
-    const recKm = workKm; // recuperação igual ao tiro
+    const recKm = workKm;
     const real = workKm + recKm;
     return { t:"Intervalado · Pirâmide", real, workKm, recKm,
       d:["2 km aquecimento em Z2", `${reps.map(fmtM).join("-")} forte (Z5), recuperação em trote leve igual à distância de cada tiro`, "1,5 km desaquecimento"] };
   }},
   { name:"Tiros curtos", make:(core)=>{
-    const cycle = 0.6; // 400m forte + 200m recuperação
+    const cycle = 0.6;
     const reps = Math.max(6, Math.round(core/cycle));
     const workKm = reps*0.4, recKm = reps*0.2;
     return { t:"Intervalado · 400m repetido", real:workKm+recKm, workKm, recKm,
       d:["2 km aquecimento em Z2", `${reps}× 400m forte (Z5), recuperação 200m trote leve`, "1,5 km desaquecimento"] };
   }},
   { name:"Repetições longas", make:(core)=>{
-    const cycle = 2.0; // 1600m forte + 400m recuperação
+    const cycle = 2.0;
     const reps = Math.max(3, Math.round(core/cycle));
     const workKm = reps*1.6, recKm = reps*0.4;
     return { t:"Intervalado · 1600m longo", real:workKm+recKm, workKm, recKm,
@@ -374,7 +336,6 @@ const QUALITY_BANK = [
       d:["2 km aquecimento em Z2", `${reps.map(fmtM).join("-")} forte (Z5), recuperação em trote leve igual à distância de cada tiro`, "1,5 km desaquecimento"] };
   }},
   { name:"30/30", make:(core)=>{
-    // protocolo por tempo: 30s forte + 30s trote, tempo igual dos dois lados — calculado direto em tempo, não em km
     const cycle = 0.175;
     const reps = Math.max(12, Math.round(core/cycle));
     return { t:"Intervalado · 30s/30s (Billat)", real:reps*cycle, workKm:null, recKm:null, repsTime:reps, isTimeBase:true,
@@ -395,16 +356,12 @@ const QUALITY_BANK = [
       d:["2 km aquecimento em Z2", `${reps.map(fmtM).join("-")} forte (Z5), ficando mais rápido a cada tiro conforme a distância cai — recuperação proporcional ao tiro`, "1,5 km desaquecimento"] };
   }},
 ];
-// Curtos/explosivos → EVO SL (leve, reativo). Longos/sustentados → Corre Turbo (conforto, aguenta volume).
 const QUALITY_SHOE = ["Corre Turbo","Adizero EVO SL","Corre Turbo","Corre Turbo","Adizero EVO SL","Corre Turbo","Adizero EVO SL"];
-// Progressão por fase: Consolidação = curto/geral, Construção = misto, Pico = longo/específico de prova
-// (índices em QUALITY_BANK: 0 Pirâmide, 1 Tiros curtos, 2 Repetições longas, 3 Escada, 4 30/30, 5 Subida, 6 Cruzado)
 const QUALITY_PHASE_POOLS = {
   B: [1, 4, 3, 0],
   C: [0, 5, 2, 6, 3],
   D: [2, 6],
 };
-// Limiar gira a cada 4 semanas: Rebel V5 na base, Turbo e EVO SL entrando de vez em quando
 const TEMPO_SHOE = ["New Balance Rebel V5","Corre Turbo","New Balance Rebel V5","Adizero EVO SL"];
 
 function qDetails(ph, variantIdx, km){
@@ -436,7 +393,7 @@ function tDetails(ph,km){
     const blocks = Math.max(1, Math.round(core/blockSizeTarget));
     const blockSize = Math.round((core/blocks)*10)/10;
     const real = blocks*blockSize;
-    const restMin = ph==="C" ? 2.5 : 2; // "2-3min" (C) ou "2min" (D) de trote entre blocos
+    const restMin = ph==="C" ? 2.5 : 2;
     const restTotal = Math.max(0,blocks-1)*restMin;
     const warm=segTime(2,PACE_MIN.z2), work=segTime(real,PACE_MIN.z4), cool=segTime(1.5,PACE_MIN.z2);
     const total=sumRanges(warm,work,cool,[restTotal,restTotal]);
@@ -466,7 +423,7 @@ const TEST_WEEKS = { 5: "5K", 9: "10K" };
 function build(){
   const out=[]; let cur=new Date(PLAN_START); let n=1; let tCounter=0;
   PHASES.forEach(ph=>{
-    let qCounter=0; // reseta por fase — cada fase progride no próprio pool
+    let qCounter=0;
     for(let i=0;i<ph.weeks;i++){
       const t = ph.weeks>1 ? i/(ph.weeks-1) : 1;
       let vol = Math.round(ph.v0 + (ph.v1-ph.v0)*t);
@@ -482,7 +439,6 @@ function build(){
       const qualityIdx = pattern.findIndex(p=>p.t==="quality");
       const tempoIdx = pattern.findIndex(p=>p.t==="tempo");
 
-      // 1) aplica teto do longão
       let stepKm = rawKm.slice();
       if(!last && stepKm[longIdx] > longCap){
         const overflow = stepKm[longIdx] - longCap;
@@ -492,8 +448,6 @@ function build(){
         otherIdx.forEach(i=>{ stepKm[i] = Math.round((stepKm[i] + overflow*(pattern[i].s/otherShareSum))*10)/10; });
       }
 
-      // 2) calcula a estrutura real do intervalado e do limiar — a distância prescrita pode diferir
-      //    ligeiramente do valor-alvo (arredondamento de séries), então ajusta e guarda a diferença
       const pool = QUALITY_PHASE_POOLS[ph.id] || [0,1,2,3,4,5,6];
       let qVariantForWeek = 0, qContent = null, tContent = null;
       if(qualityIdx>=0){
@@ -510,7 +464,6 @@ function build(){
         const totalDiff = adjustIdx.reduce((a,x)=>a+x.diff,0);
         const easyIdx = pattern.map((_,i)=>i).filter(i=>pattern[i].t==="easy");
         const easyShareSum = easyIdx.reduce((a,i)=>a+pattern[i].s,0);
-        // absorve a diferença nos dias fáceis (na direção oposta, pra manter o volume da semana igual)
         easyIdx.forEach(i=>{ finalKm[i] = Math.max(2, Math.round((finalKm[i] - totalDiff*(pattern[i].s/easyShareSum))*10)/10); });
       }
       if(!last) qCounter++;
@@ -586,8 +539,6 @@ function build(){
           displayVol = Math.round(sessions.reduce((a,s)=>a+s.km,0)*10)/10; }
       }
 
-      // Recuperação de blefaroplastia (cirurgia 02/09) — sem corrida/musculação de 03/09 a 09/09,
-      // bike liberada. Retomada gradual a partir de 10/09.
       const BIKE_DAYS_W2 = ["Quinta","Sexta","Domingo"];
       const BIKE_DAYS_W3 = ["Segunda","Terça"];
       if(n===2){
@@ -643,16 +594,12 @@ function build(){
 const WEEKS = build();
 const MAXVOL = Math.max(...WEEKS.map(w=>w.vol));
 
-// Perfil atualizado: 84kg, ~18,5% gordura (estimativa, meio-termo de 18-19%) → massa magra ~68,5kg
-// Proteína agora calculada por kg de massa magra (mais preciso que por peso total), não só por peso total
 const NUTRITION = [
   { tier:"Dia de descanso", color:"#6E6E7C", kcal:"2.100 – 2.250 kcal", carb:"225–265g", carbG:"2,7–3,2 g/kg", prot:"~158g", protG:"2,3 g/kg massa magra", fat:"~62g", fatG:"0,7 g/kg" },
   { tier:"Treino leve", color:"#3DD6C0", kcal:"2.650 – 2.950 kcal", carb:"345–430g", carbG:"4,1–5,1 g/kg", prot:"~158g", protG:"2,3 g/kg massa magra", fat:"~62g", fatG:"0,7 g/kg" },
   { tier:"Treino forte", color:"#F2564B", kcal:"3.300 – 3.550 kcal", carb:"520–600g", carbG:"6,2–7,1 g/kg", prot:"158–165g", protG:"2,3–2,4 g/kg massa magra", fat:"~62g", fatG:"0,7 g/kg" },
 ];
 
-// Modelos de treino de força — a atribuição por dia é calculada por semana em getStrengthForWeek(),
-// porque quarta/sexta trocam de papel (fácil ↔ dia duro) entre o padrão de 5 e o de 6 dias de corrida.
 const STRENGTH_ROUTINES = {
   pushA:  { code:"PUSH", title:"Push A", focus:"Peito, ombro, tríceps", intensity:"Intensidade normal",
     ex:["Supino reto — 4×8-10","Desenvolvimento ombro — 3×10","Crucifixo — 3×12","Tríceps corda — 3×12"] },
@@ -684,7 +631,6 @@ function getStrengthForWeek(freq){
     } else if(type==="long"){
       result.push({ day, ...STRENGTH_ROUTINES.rest, paired:"Longão", focus:"Dia protegido pro longão" });
     } else {
-      // fácil ou sem corrida — entra na fila pra receber Push A / Legs / Push B / Pull B, nessa ordem
       freeDays.push(day);
     }
   });
@@ -699,8 +645,6 @@ function getStrengthForWeek(freq){
   return DAY_ORDER.map(day=>result.find(r=>r.day===day));
 }
 
-// ── CARDÁPIO — 2 opções por refeição, 4 níveis (o nível de cada dia é calculado
-// automaticamente a partir do treino real daquele dia naquela semana, igual à corrida) ──
 const MEAL_PLAN = {
   "Descanso": {
     "Café da manhã": [
@@ -816,7 +760,6 @@ const MEAL_PLAN = {
 const TIER_COLOR = { "Descanso":"#6E6E7C", "Leve":"#3DD6C0", "Forte":"#F2564B", "Taper":"#F5A623", "Carga de Carboidrato":"#B98CE8" };
 
 function getDayTier(week, day){
-  // Carga de carboidrato: quinta, sexta e sábado da ÚLTIMA semana (os 3 dias antes do domingo da prova)
   const isLastWeek = week.n === WEEKS.length;
   if(isLastWeek && ["Quinta","Sexta","Sábado"].includes(day)) return "Carga de Carboidrato";
 
@@ -832,12 +775,11 @@ function getDayTier(week, day){
 }
 
 const KEY="meia_bsb_v3";
-const HAS_WS = (typeof window.storage !== "undefined" && window.storage !== null);
-let store={}; let STORAGE_OK=true;
-if(!HAS_WS){
-  try{ store=JSON.parse(localStorage.getItem(KEY)||"{}"); }catch(e){ store={}; STORAGE_OK=false; }
-  try{ localStorage.setItem("__test__","1"); localStorage.removeItem("__test__"); }catch(e){ STORAGE_OK=false; }
-}
+let store={}; let STORAGE_OK=true; let DB=null; let dbReady=false;
+
+try{ store=JSON.parse(localStorage.getItem(KEY)||"{}"); }catch(e){ store={}; STORAGE_OK=false; }
+try{ localStorage.setItem("__test__","1"); localStorage.removeItem("__test__"); }catch(e){ STORAGE_OK=false; }
+
 let S={ wk:0, day:null, view:"plan", open:new Set(), editing:null };
 
 function showToast(ok){
@@ -845,7 +787,7 @@ function showToast(ok){
   if(!t){
     t = document.createElement("div");
     t.id = "saveToast";
-    t.style.cssText = "position:fixed;bottom:calc(84px + env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);padding:9px 16px;border-radius:20px;font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:700;z-index:999;transition:opacity .25s;pointer-events:none;";
+    t.style.cssText = "position:fixed;bottom:18px;left:50%;transform:translateX(-50%);padding:9px 16px;border-radius:20px;font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:700;z-index:999;transition:opacity .25s;pointer-events:none;";
     document.body.appendChild(t);
   }
   t.textContent = ok ? "✓ Salvo" : "⚠️ Não foi possível salvar";
@@ -855,33 +797,17 @@ function showToast(ok){
   clearTimeout(window._toastTimer);
   window._toastTimer = setTimeout(()=>{ t.style.opacity="0"; }, 1400);
 }
-// Salva no local certo: armazenamento do Claude (dentro do chat/artefato) ou localStorage (navegador padrão)
-function saveToWSWithRetry(payload, attempt=1){
-  window.storage.set(KEY, payload, false)
-    .then(r=>{
-      if(r) showToast(true);
-      else if(attempt<3) setTimeout(()=>saveToWSWithRetry(payload, attempt+1), 500*attempt);
-      else showToast(false);
-    })
-    .catch(()=>{
-      if(attempt<3) setTimeout(()=>saveToWSWithRetry(payload, attempt+1), 500*attempt);
-      else showToast(false);
-    });
-}
 const save =()=>{
-  // backup local imediato, sem depender de rede — protege a sessão atual mesmo se o resto falhar
-  try{ localStorage.setItem(KEY+"_backup", JSON.stringify(store)); }catch(e){}
-  if(HAS_WS){
-    saveToWSWithRetry(JSON.stringify(store));
-    return true;
+  try{ localStorage.setItem(KEY,JSON.stringify(store)); }catch(e){}
+  if(DB){
+    DB.doc("progress/store").set(store).then(()=>showToast(true)).catch(()=>showToast(false));
+  } else {
+    try{
+      const check = localStorage.getItem(KEY);
+      const ok = check === JSON.stringify(store);
+      showToast(ok);
+    }catch(e){ showToast(false); }
   }
-  try{
-    localStorage.setItem(KEY,JSON.stringify(store));
-    const check = localStorage.getItem(KEY);
-    const ok = check === JSON.stringify(store);
-    showToast(ok);
-    return ok;
-  }catch(e){ showToast(false); return false; }
 };
 const gk   =(w,d)=>`w${w}_${d}`;
 const gd   =(w,d)=>store[gk(w,d)]||{};
@@ -896,6 +822,7 @@ function header(){
   const days=Math.ceil((RACE_DATE-new Date())/864e5);
   const wk=WEEKS[S.wk];
   const totalKm = WEEKS.reduce((a,w)=>a+w.vol,0);
+  const TABS=[["plan","Treinos"],["musculacao","Musculação"],["cardapio","Cardápio"],["overview","Visão geral"],["fases","Fases"],["zonas","Zonas"],["nutricao","Nutrição"]];
 
   document.getElementById("header").innerHTML=`
     ${!STORAGE_OK?`<div style="background:#F2564B;color:#08080A;padding:8px 14px;font-family:'JetBrains Mono',monospace;font-size:11.5px;font-weight:700;text-align:center">⚠️ Esse navegador está bloqueando o salvamento — nada vai persistir ao fechar. Veja as dicas abaixo.</div>`:""}
@@ -927,17 +854,9 @@ function header(){
         <div class="kpi-val">${Math.round(totalKm)}<span style="font-size:11px;color:var(--text-3)"> km</span></div>
         <div class="kpi-sub">${WEEKS.length} semanas</div>
       </div>
-    </div>`;
-}
-
-function bottomNav(){
-  document.getElementById("bottomnav").innerHTML = `<div class="navwrap">${TABS.map(([id,l,icon])=>`
-    <button class="navitem ${S.view===id?"on":""}" data-tab="${id}">
-      <span class="navicon">${icon}</span>
-      <span class="navlbl">${l}</span>
-      <span class="navdot"></span>
-    </button>`).join("")}</div>`;
-  document.querySelectorAll("[data-tab]").forEach(b=>b.onclick=()=>{ S.view=b.dataset.tab; render(); });
+    </div>
+    <div id="tabs">${TABS.map(([id,l])=>`<button class="tab ${S.view===id?"on":""}" data-tab="${id}">${l}</button>`).join("")}</div>`;
+  document.querySelectorAll(".tab").forEach(b=>b.onclick=()=>{ S.view=b.dataset.tab; render(); });
 }
 
 function viewPlan(){
@@ -1432,32 +1351,36 @@ function viewCardapio(){
 
 function render(){
   header();
-  bottomNav();
   ({ plan:viewPlan, musculacao:viewStrength, cardapio:viewCardapio, overview:viewOverview,
      fases:viewPhases, zonas:viewZones, nutricao:viewNutrition })[S.view]();
 }
 
-async function init(){
-  if(HAS_WS){
-    try{
-      const r = await window.storage.get(KEY, false);
-      if(r && r.value) store = JSON.parse(r.value);
-    }catch(e){
-      // pode ser primeira vez (chave não existe, normal) ou falha de rede ao carregar —
-      // nesse segundo caso, recupera do backup local pra não voltar zerado à toa
-      try{
-        const backup = localStorage.getItem(KEY+"_backup");
-        if(backup){ store = JSON.parse(backup); showToast(false); }
-      }catch(e2){}
-    }
-  }
+function start(){
   render();
-  if('serviceWorker' in navigator){
-    window.addEventListener('load', ()=>{ navigator.serviceWorker.register('sw.js').catch(()=>{}); });
+  if(window.claude && window.claude.use){
+    window.claude.use("db").then(db=>{
+      if(!db) return;
+      DB = db;
+      DB.doc("progress/store").get().then(snap=>{
+        if(snap.exists && snap.data()){
+          store = snap.data();
+          render();
+        } else if(Object.keys(store).length){
+          DB.doc("progress/store").set(store).catch(()=>{});
+        }
+        dbReady = true;
+      }).catch(()=>{});
+    }).catch(()=>{});
   }
 }
-init();
+window.claude?.hot?.ready ? window.claude.hot.ready(start) : start();
 setInterval(()=>{ if(S.view==="plan"&&!S.editing) header(); }, 60000);
+</script>
+
+<script>
+if('serviceWorker' in navigator){
+  window.addEventListener('load', ()=>{ navigator.serviceWorker.register('sw.js').catch(()=>{}); });
+}
 </script>
 </body>
 </html>
