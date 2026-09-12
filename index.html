@@ -427,13 +427,51 @@ function tDetails(ph,km){
 
 function fmtD(d){ return `${String(d.getDate()).padStart(2,"0")}/${String(d.getMonth()+1).padStart(2,"0")}`; }
 function paceToDec(str){ const [m,s]=str.trim().split(":").map(Number); return m+s/60; }
-function minToHM(min){ const h=Math.floor(min/60); const m=Math.round(min%60); return h>0?`${h}h${String(m).padStart(2,"0")}`:`${m}min`; }
+function minToHM(min){ let h=Math.floor(min/60), m=Math.round(min%60); if(m===60){ m=0; h+=1; } return h>0?`${h}h${String(m).padStart(2,"0")}`:`${m}min`; }
 function fmtDuration(lo,hi){
   if(lo==null||hi==null) return "";
   if(Math.round(lo)===Math.round(hi)) return `~${minToHM(lo)}`;
   const hL=Math.floor(lo/60), hH=Math.floor(hi/60);
   if(hL===hH && hL===0) return `${Math.round(lo)}-${Math.round(hi)}min`;
   return `${minToHM(lo)}-${minToHM(hi)}`;
+}
+function fmtHMS(sec){
+  const h=Math.floor(sec/3600), m=Math.floor((sec%3600)/60), s=Math.round(sec%60);
+  return h>0 ? `${h}:${String(m).padStart(2,"0")}:${String(s).padStart(2,"0")}` : `${m}:${String(s).padStart(2,"0")}`;
+}
+
+// ── Previsão de prova — só com dados próprios, sem comparar com outros atletas (nada de Strava aqui) ──
+// Riegel: T2 = T1 · (D2/D1)^1.06 — extrapolação pura de potência, calibrada em corredores de elite/sub-elite.
+function riegelPredict(baseDistKm, baseTimeSec, targetDistKm, exp=1.06){
+  return baseTimeSec * Math.pow(targetDistKm/baseDistKm, exp);
+}
+// VDOT (Daniels & Gilbert) — modelo fisiológico de VO2 vs. % de VO2max sustentável por duração.
+function vo2AtVelocity(v){ return -4.60 + 0.182258*v + 0.000104*v*v; } // v em m/min
+function pctVO2AtTime(tMin){ return 0.8 + 0.1894393*Math.exp(-0.012778*tMin) + 0.2989558*Math.exp(-0.1932605*tMin); }
+function vdotFromPerformance(distKm, timeSec){
+  const tMin=timeSec/60, v=(distKm*1000)/tMin;
+  return vo2AtVelocity(v)/pctVO2AtTime(tMin);
+}
+function timeForDistanceAtVDOT(vdot, distKm, lo=5, hi=300){
+  for(let i=0;i<80;i++){
+    const mid=(lo+hi)/2, v=(distKm*1000)/mid;
+    const est=vo2AtVelocity(v)/pctVO2AtTime(mid);
+    if(est>vdot) lo=mid; else hi=mid;
+  }
+  return (lo+hi)/2*60;
+}
+// melhor referência conhecida pra ancorar as fórmulas: usa o teste de 5K/10K do próprio plano se já tiver
+// sido registrado (extrapola menos, é mais confiável); senão cai pro PR de 5K conhecido antes do ciclo.
+function bestKnownPR(){
+  let best={ distKm:5, timeSec:24*60+39, source:"PR de 5K · 24:39 (antes do ciclo, ~20°C no Rio)" };
+  WEEKS.forEach(w=>w.sessions.forEach(s=>{
+    if(!/Teste de (5K|10K)/.test(s.title)) return;
+    const d=gd(w.n,s.day);
+    if(d.realKm && d.pace && d.realKm>=best.distKm){
+      best={ distKm:d.realKm, timeSec:d.realKm*paceToDec(d.pace)*60, source:`Teste de ${esc(s.title.replace("🏁 Teste de ",""))} · Semana ${w.n}` };
+    }
+  }));
+  return best;
 }
 function addD(d,n){ const r=new Date(d); r.setDate(r.getDate()+n); return r; }
 const DAY_OFFSET = {Segunda:0,Terça:1,Quarta:2,Quinta:3,Sexta:4,Sábado:5,Domingo:6};
@@ -1550,8 +1588,27 @@ function viewZones(){
       Pace de prova hoje: <b>${ZP.z3}/km</b> → projeção de <b>${minToHM(raceLo)} a ${minToHM(raceHi)}</b> (meio-termo ~${minToHM(raceTimeMid)}).<br><br>
       Esse número <b>não é fixo</b> — ele atualiza a cada checkpoint (S5, S8, S11) e principalmente depois dos testes de 5K (S5) e 10K (S9). Não é "o pace de novembro definido hoje", é a melhor estimativa com o dado que existe agora.
     </div>
-  </div>
-  <div class="panel" style="border-color:${ZC.z2}30">
+  </div>`;
+
+  {
+    const pr=bestKnownPR();
+    const vdot=vdotFromPerformance(pr.distKm, pr.timeSec);
+    const riegelHalf=riegelPredict(pr.distKm, pr.timeSec, 21.1);
+    const riegel10k=riegelPredict(pr.distKm, pr.timeSec, 10);
+    const vdotHalf=timeForDistanceAtVDOT(vdot, 21.1);
+    const vdot10k=timeForDistanceAtVDOT(vdot, 10);
+    h+=`<div class="panel" style="border-color:${ZC.z4}40">
+      <div class="panel-lbl" style="color:${ZC.z4}">📐 Previsão por fórmula — sem comparar com outros atletas</div>
+      <div class="panel-body">
+        Baseado só em <b>${pr.source}</b> — nenhum dado de população do Strava entra aqui, só duas fórmulas matemáticas aplicadas ao seu próprio desempenho:<br><br>
+        <b>Riegel</b> <span style="color:var(--text-3)">(T₂=T₁·(D₂/D₁)^1.06)</span> → meia maratona em <b style="color:${ZC.z4}">${fmtHMS(riegelHalf)}</b> · 10K em <b>${fmtHMS(riegel10k)}</b><br>
+        <b>VDOT</b> <span style="color:var(--text-3)">(modelo fisiológico de Jack Daniels, VDOT ${vdot.toFixed(1)})</span> → meia maratona em <b style="color:${ZC.z4}">${fmtHMS(vdotHalf)}</b> · 10K em <b>${fmtHMS(vdot10k)}</b><br><br>
+        As duas convergem perto de ${minToHM((riegelHalf+vdotHalf)/2/60)} pra meia — mais rápido que o pace-alvo atual do plano (${minToHM(raceLo)}–${minToHM(raceHi)}). Isso é esperado, não é a previsão "certa": é uma extrapolação de <b>4× a distância</b> a partir de um único 5K, sem saber se sua resistência aeróbica aguenta o ritmo por 21km. Fórmula nenhuma sabe disso — só teste real mostra. O teste de 10K (Semana 9) reduz a extrapolação pra 2× e aperta bastante essa previsão pra mais perto da realidade.
+      </div>
+    </div>`;
+  }
+
+  h+=`<div class="panel" style="border-color:${ZC.z2}30">
     <div class="panel-lbl" style="color:${ZC.z2}">Sobre esses paces</div>
     <div class="panel-body">Recalibrados depois do seu PR de 5K (24:39). Esses números já consideram o calor de Brasília — o PR foi corrido a ~20°C no Rio, bem mais fresco que os 26–31°C daqui. Trate como provisório até validar em treino normal na cidade.</div>
   </div>
