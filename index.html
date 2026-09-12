@@ -2206,9 +2206,15 @@ function start(){
       DB = db;
       DB.doc("progress/store").get().then(snap=>{
         if(snap.exists && snap.data()){
+          const serverData=snap.data();
           // Mescla o que veio do servidor com qualquer marcação feita localmente
           // nesse intervalo de carregamento — evita perder cliques rápidos.
-          store = {...snap.data(), ...store};
+          store = {...serverData, ...store};
+          // strava_calories/strava_load só são escritos por mim direto no servidor
+          // (o cliente nunca edita esses campos) — servidor sempre vence, senão um
+          // cache local antigo pisa num sync novo de Strava.
+          store.strava_calories = serverData.strava_calories || store.strava_calories || {};
+          store.strava_load = serverData.strava_load || store.strava_load || {};
           render();
           DB.doc("progress/store").set(store).catch(()=>{});
         } else if(Object.keys(store).length){
