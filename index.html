@@ -253,6 +253,16 @@
   .chart-empty{ font-size:11px; color:var(--text-3); text-align:center; padding:30px 10px; line-height:1.6; }
   .todaypill{ font-family:'JetBrains Mono',monospace; font-size:7.5px; font-weight:800; letter-spacing:.1em; background:var(--gold); color:#08080A; padding:2.5px 6px; border-radius:20px; }
 
+  .logrows{ display:flex; flex-direction:column; gap:2px; }
+  .logrow{ display:flex; align-items:stretch; gap:11px; padding:10px 2px; border-bottom:1px solid var(--line-soft); }
+  .logrow:last-child{ border-bottom:none; }
+  .logrow-date{ flex-shrink:0; width:34px; text-align:center; padding-top:1px; }
+  .logrow-d{ font-family:'Archivo',sans-serif; font-weight:800; font-size:12.5px; }
+  .logrow-w{ font-family:'JetBrains Mono',monospace; font-size:7.5px; color:var(--text-3); margin-top:1px; }
+  .logrow-main{ flex:1; min-width:0; }
+  .logrow-top{ display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:5px; }
+  .logrow-stats{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; font-family:'JetBrains Mono',monospace; font-size:10.5px; color:var(--text-2); }
+
   @media (prefers-reduced-motion:reduce){ *{ transition:none !important; } }
   @media (max-width:380px){
     #kpis{ grid-template-columns:1fr 1fr; }
@@ -429,6 +439,14 @@ function addD(d,n){ const r=new Date(d); r.setDate(r.getDate()+n); return r; }
 const DAY_OFFSET = {Segunda:0,Terça:1,Quarta:2,Quinta:3,Sexta:4,Sábado:5,Domingo:6};
 function sessionDate(weekN,day){ return addD(PLAN_START, (weekN-1)*7 + DAY_OFFSET[day]); }
 function sameDay(a,b){ return a.toDateString()===b.toDateString(); }
+function isoLocal(d){ return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`; }
+function weekDayFor(date){
+  const diffDays = Math.round((date-PLAN_START)/864e5);
+  if(diffDays<0) return null;
+  const weekN = Math.floor(diffDays/7)+1, dayIdx = diffDays%7;
+  const dayName = Object.keys(DAY_OFFSET).find(k=>DAY_OFFSET[k]===dayIdx);
+  return { weekN, dayName };
+}
 
 const CHECKPOINT_WEEKS = [5, 8, 11];
 const TEST_WEEKS = { 5: "5K", 9: "10K" };
@@ -871,6 +889,139 @@ function z2PacePoints(){
   pts.sort((a,b)=>a.date-b.date);
   return pts;
 }
+
+// ── Treino a treino: todo registro com km real, em ordem cronológica ──
+function loggedSessions(){
+  const out=[];
+  WEEKS.forEach(w=>{
+    w.sessions.forEach(s=>{
+      const d=gd(w.n,s.day);
+      if(!d.realKm) return;
+      out.push({ week:w.n, day:s.day, short:s.short, date:sessionDate(w.n,s.day), title:s.title, zone:s.zone,
+        plannedKm:s.km, plannedPace:ZP[s.zone], realKm:d.realKm, pace:d.pace, paceDec:d.pace?paceToDec(d.pace):null,
+        fc:d.fc, note:d.note });
+    });
+  });
+  out.sort((a,b)=>a.date-b.date);
+  return out;
+}
+function sessionLogListHTML(){
+  const rows=loggedSessions();
+  if(!rows.length) return `<div class="chart-empty">Nenhum treino com km real registrado ainda.</div>`;
+  // pace anterior no MESMO tipo de zona, pra mostrar a evolução treino a treino
+  const lastPaceByZone={};
+  let h="";
+  rows.forEach(r=>{
+    const c=ZC[r.zone];
+    let delta="";
+    if(r.paceDec!=null && lastPaceByZone[r.zone]!=null){
+      const diffSec=Math.round((lastPaceByZone[r.zone]-r.paceDec)*60); // positivo = ficou mais rápido
+      if(diffSec!==0){
+        const faster=diffSec>0;
+        delta=`<span style="font-family:'JetBrains Mono',monospace;font-size:9.5px;font-weight:700;color:${faster?"var(--ok)":"var(--z5)"}">${faster?"▼":"▲"} ${Math.abs(diffSec)}s/km</span>`;
+      } else {
+        delta=`<span style="font-family:'JetBrains Mono',monospace;font-size:9.5px;color:var(--text-3)">= pace</span>`;
+      }
+    }
+    if(r.paceDec!=null) lastPaceByZone[r.zone]=r.paceDec;
+    h+=`<div class="logrow">
+      <div class="logrow-date">
+        <div class="logrow-d">${String(r.date.getDate()).padStart(2,"0")}/${String(r.date.getMonth()+1).padStart(2,"0")}</div>
+        <div class="logrow-w">S${r.week}</div>
+      </div>
+      <div class="zstripe" style="background:${c}"></div>
+      <div class="logrow-main">
+        <div class="logrow-top">
+          <span class="card-title" style="font-size:12.5px">${esc(r.title)}</span>
+          <span class="zpill" style="background:${c}1F;color:${c}">${ZL[r.zone]}</span>
+        </div>
+        <div class="logrow-stats">
+          <span>${r.realKm}km${r.plannedKm>0?` <span style="color:var(--text-3)">/ ${r.plannedKm} planejado</span>`:""}</span>
+          ${r.pace?`<span style="color:${c}">${r.pace}/km</span>`:""}
+          ${r.fc?`<span style="color:var(--text-3)">FC ${r.fc}</span>`:""}
+          ${delta}
+        </div>
+      </div>
+    </div>`;
+  });
+  return `<div class="logrows">${h}</div>`;
+}
+
+// ── Carga de treino — fitness/fadiga/forma (CTL/ATL/TSB) a partir do Relative Effort do Strava ──
+// lido a cada chamada (não cacheado): "store" é reatribuído quando os dados salvos chegam do servidor
+function stravaLoad(){ return store.strava_load || {}; }
+function zoneRateKm(zone){
+  let sumRE=0,sumKm=0;
+  WEEKS.forEach(w=>w.sessions.forEach(s=>{
+    if(s.zone!==zone) return;
+    const d=gd(w.n,s.day);
+    if(d.load && d.realKm){ sumRE+=d.load; sumKm+=d.realKm; }
+  }));
+  const defaults={z2:15,z3:18.5,z4:18,z5:18};
+  return sumKm>0 ? sumRE/sumKm : defaults[zone];
+}
+function buildLoadSeries(){
+  const loadMap=stravaLoad();
+  // tudo até hoje é real (0 nos dias sem registro = descanso de verdade, não lacuna de sincronização);
+  // só depois de hoje é que vira estimativa
+  const cutoff=new Date(); cutoff.setHours(0,0,0,0);
+  const series=[];
+  for(let d=new Date(PLAN_START); d<=RACE_DATE; d=addD(d,1)){
+    const key=isoLocal(d);
+    let load=0, projected=false;
+    if(d<=cutoff){
+      load=loadMap[key]||0;
+    } else {
+      projected=true;
+      const wd=weekDayFor(d);
+      if(wd){
+        const week=WEEKS.find(w=>w.n===wd.weekN);
+        if(week){
+          const sess=week.sessions.find(s=>s.day===wd.dayName);
+          if(sess) load += sess.km>0 ? Math.round(sess.km*zoneRateKm(sess.zone)) : 6;
+          const strengthDay=getStrengthForWeek(week.ph.freq).find(x=>x.day===wd.dayName);
+          if(strengthDay && strengthDay.ex.length>0) load += 6;
+        }
+      }
+    }
+    series.push({ date:new Date(d), load, projected });
+  }
+  return series;
+}
+function computeFitness(series){
+  const k42=1-Math.exp(-1/42), k7=1-Math.exp(-1/7);
+  let ctl=0, atl=0;
+  return series.map(pt=>{
+    ctl = ctl + (pt.load-ctl)*k42;
+    atl = atl + (pt.load-atl)*k7;
+    return { ...pt, ctl:Math.round(ctl*10)/10, atl:Math.round(atl*10)/10, tsb:Math.round((ctl-atl)*10)/10 };
+  });
+}
+function loadChartSVG(){
+  const series=computeFitness(buildLoadSeries());
+  const today=new Date();
+  const W=680,H=210,padL=28,padR=10,padT=14,padB=24;
+  const minDate=series[0].date, maxDate=series[series.length-1].date;
+  const spanMs=Math.max(1,maxDate-minDate);
+  const allVals=series.flatMap(p=>[p.ctl,p.atl,p.tsb]);
+  const minV=Math.min(...allVals,0), maxV=Math.max(...allVals,10);
+  const scaleX=d=>padL+((d-minDate)/spanMs)*(W-padL-padR);
+  const scaleY=v=>H-padB-((v-minV)/(maxV-minV))*(H-padT-padB);
+  const zeroY=scaleY(0);
+  const cutoffIdx=series.findIndex(p=>p.projected);
+  const splitX=cutoffIdx>=0 ? scaleX(series[cutoffIdx].date) : (W-padR);
+  const line=key=>series.map((p,i)=>`${i===0?"M":"L"} ${scaleX(p.date).toFixed(1)} ${scaleY(p[key]).toFixed(1)}`).join(" ");
+  const todayX=scaleX(today);
+  return `<svg viewBox="0 0 ${W} ${H}" width="100%" height="${H}" style="overflow:visible">
+    <line x1="${padL}" y1="${zeroY.toFixed(1)}" x2="${W-padR}" y2="${zeroY.toFixed(1)}" stroke="var(--line)" stroke-width="1"/>
+    ${splitX<W-padR?`<rect x="${splitX.toFixed(1)}" y="${padT}" width="${(W-padR-splitX).toFixed(1)}" height="${H-padT-padB}" fill="var(--surface-2)" opacity="0.5"/>`:""}
+    <path d="${line("tsb")}" fill="none" stroke="${ZC.z3}" stroke-width="1.5" opacity="0.85"/>
+    <path d="${line("atl")}" fill="none" stroke="${ZC.z5}" stroke-width="1.5" opacity="0.85"/>
+    <path d="${line("ctl")}" fill="none" stroke="var(--gold)" stroke-width="2.5"/>
+    <line x1="${todayX.toFixed(1)}" y1="${padT}" x2="${todayX.toFixed(1)}" y2="${H-padB}" stroke="var(--text-3)" stroke-width="1" stroke-dasharray="3,3"/>
+    <text x="${todayX.toFixed(1)}" y="${padT-3}" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="8" fill="var(--text-3)">hoje</text>
+  </svg>`;
+}
 function volumeChartSVG(){
   const weeks=weeksStarted();
   if(!weeks.length) return `<div class="chart-empty">Ainda sem semanas iniciadas.</div>`;
@@ -932,6 +1083,12 @@ function viewEvolution(){
   </div>`;
 
   h+=`<div class="chartcard">
+    <div class="chart-title">Treino a treino</div>
+    <div class="chart-sub">Ordem cronológica · seta mostra se ficou mais rápido ou mais lento que o último do mesmo tipo (Z2/Z3/Z4/Z5)</div>
+    ${sessionLogListHTML()}
+  </div>`;
+
+  h+=`<div class="chartcard">
     <div class="chart-title">Volume semanal</div>
     <div class="chart-sub">km por semana — contorno é o planejado, cheio é o que rodou de verdade</div>
     <div class="chart-legend">
@@ -947,9 +1104,28 @@ function viewEvolution(){
     ${paceChartSVG()}
   </div>`;
 
+  const fitSeries=computeFitness(buildLoadSeries());
+  const now=new Date();
+  const lastReal=[...fitSeries].reverse().find(p=>sameDay(p.date,now)) || [...fitSeries].reverse().find(p=>!p.projected) || fitSeries[0];
+  const atRace=fitSeries[fitSeries.length-1];
+  h+=`<div class="chartcard">
+    <div class="chart-title">Carga de treino — fitness, fadiga e forma</div>
+    <div class="chart-sub">Modelo de carga (impulso-resposta) a partir do Relative Effort do Strava · área sombreada é projeção, não treino real ainda</div>
+    <div class="chart-legend">
+      <span class="legend-item"><span class="legend-swatch" style="background:var(--gold)"></span>Fitness (CTL)</span>
+      <span class="legend-item"><span class="legend-swatch" style="background:${ZC.z5}"></span>Fadiga (ATL)</span>
+      <span class="legend-item"><span class="legend-swatch" style="background:${ZC.z3}"></span>Forma (TSB)</span>
+    </div>
+    ${loadChartSVG()}
+    <div class="pacebox-note" style="margin-top:12px">
+      Hoje: fitness ${lastReal.ctl}, fadiga ${lastReal.atl}, forma ${lastReal.tsb>0?"+":""}${lastReal.tsb}.
+      Se você cumprir o plano dali pra frente, a projeção chega no dia da prova com fitness em torno de <b>${atRace.ctl}</b> e forma de <b>${atRace.tsb>0?"+":""}${atRace.tsb}</b> — ${atRace.tsb>=0?"forma positiva, exatamente o efeito esperado do taper: chegar fresco na largada.":"forma bem mais alta que durante o volume pesado — o taper reduz a fadiga acumulada mesmo sem cruzar pra positivo."}
+    </div>
+  </div>`;
+
   h+=`<div class="panel">
     <div class="panel-lbl" style="color:var(--gold)">Como isso é preenchido</div>
-    <div class="panel-body">Pace, FC e km reais vêm do Strava — cruzados pela data com a sessão do plano. Não atualiza sozinho: depois de treinar, é só pedir <b>"sincroniza com o Strava"</b> de novo no chat que eu busco os treinos novos e preencho aqui.</div>
+    <div class="panel-body">Pace, FC, km e carga vêm do Strava — cruzados pela data com a sessão do plano. A parte projetada da carga usa sua própria relação real de esforço por km em cada zona, aplicada aos treinos que ainda faltam. Não atualiza sozinho: depois de treinar, é só pedir <b>"sincroniza com o Strava"</b> de novo no chat que eu busco os treinos novos e recalculo tudo.</div>
   </div>`;
 
   document.getElementById("content").innerHTML=h;
