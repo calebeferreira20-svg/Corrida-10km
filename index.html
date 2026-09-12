@@ -797,10 +797,24 @@ function showToast(ok){
   clearTimeout(window._toastTimer);
   window._toastTimer = setTimeout(()=>{ t.style.opacity="0"; }, 1400);
 }
+let _saveTimer=null;
+function persistToDb(attempt=1){
+  if(!DB) return;
+  DB.doc("progress/store").set(store)
+    .then(()=>showToast(true))
+    .catch(()=>{
+      if(attempt<4) setTimeout(()=>persistToDb(attempt+1), 400*attempt);
+      else showToast(false);
+    });
+}
 const save =()=>{
   try{ localStorage.setItem(KEY,JSON.stringify(store)); }catch(e){}
   if(DB){
-    DB.doc("progress/store").set(store).then(()=>showToast(true)).catch(()=>showToast(false));
+    // Agrupa marcações feitas em sequência rápida num único salvamento —
+    // evita estourar o limite de chamadas por segundo e escritas fora de ordem
+    // quando vários treinos são marcados um atrás do outro.
+    clearTimeout(_saveTimer);
+    _saveTimer = setTimeout(()=>persistToDb(), 450);
   } else {
     try{
       const check = localStorage.getItem(KEY);
@@ -809,6 +823,9 @@ const save =()=>{
     }catch(e){ showToast(false); }
   }
 };
+document.addEventListener("visibilitychange", ()=>{
+  if(document.visibilityState==="hidden" && DB && _saveTimer){ clearTimeout(_saveTimer); persistToDb(); }
+});
 const gk   =(w,d)=>`w${w}_${d}`;
 const gd   =(w,d)=>store[gk(w,d)]||{};
 const set  =(w,d,v)=>{ store[gk(w,d)]=v; save(); };
