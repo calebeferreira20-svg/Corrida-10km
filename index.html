@@ -751,6 +751,38 @@ function build(){
 const WEEKS = build();
 const MAXVOL = Math.max(...WEEKS.map(w=>w.vol));
 
+// acha o treino de hoje pelo calendário — se hoje não tem sessão, acha o próximo dia que tem
+let TODAY_OR_NEXT = null;
+function findTodayOrNextSession(){
+  const today = new Date(); today.setHours(0,0,0,0);
+  for(let i=0;i<120;i++){
+    const d = addD(today, i);
+    const wd = weekDayFor(d);
+    if(!wd) continue;
+    const week = WEEKS.find(w=>w.n===wd.weekN);
+    if(!week) break;
+    const s = week.sessions.find(s=>s.day===wd.dayName);
+    if(s) return { weekN: week.n, day: wd.dayName, isToday: i===0 };
+  }
+  return null;
+}
+function jumpToTodaySession(){
+  TODAY_OR_NEXT = findTodayOrNextSession();
+  if(!TODAY_OR_NEXT) return;
+  const wi = WEEKS.findIndex(w=>w.n===TODAY_OR_NEXT.weekN);
+  if(wi<0) return;
+  S.wk = wi;
+  S.open.add(gk(TODAY_OR_NEXT.weekN, TODAY_OR_NEXT.day));
+}
+function scrollToTodayCard(){
+  if(!TODAY_OR_NEXT || S.view!=="plan") return;
+  setTimeout(()=>{
+    const head=document.querySelector(`[data-t="${gk(TODAY_OR_NEXT.weekN, TODAY_OR_NEXT.day)}"]`);
+    const card=head&&head.closest(".card");
+    if(card) card.scrollIntoView({behavior:"smooth", block:"center"});
+  }, 80);
+}
+
 const NUTRITION = [
   { tier:"Dia de descanso", color:"#6E6E7C", kcal:"2.100 – 2.250 kcal", carb:"225–265g", carbG:"2,7–3,2 g/kg", prot:"~158g", protG:"2,3 g/kg massa magra", fat:"~62g", fatG:"0,7 g/kg" },
   { tier:"Treino leve", color:"#3DD6C0", kcal:"2.650 – 2.950 kcal", carb:"345–430g", carbG:"4,1–5,1 g/kg", prot:"~158g", protG:"2,3 g/kg massa magra", fat:"~62g", fatG:"0,7 g/kg" },
@@ -1651,6 +1683,7 @@ function cardHTML(s,wn){
   const c=ZC[s.zone], k=gk(wn,s.day), d=gd(wn,s.day);
   const done=!!d.done, open=S.open.has(k), edit=S.editing===k;
   const isToday=sameDay(sessionDate(wn,s.day), new Date());
+  const isNext=!isToday && TODAY_OR_NEXT && TODAY_OR_NEXT.weekN===wn && TODAY_OR_NEXT.day===s.day;
   const T=titleWithIcon(s.title);
   const typeIco=T.iconName || TYPE_ICON[s.type];
 
@@ -1662,7 +1695,7 @@ function cardHTML(s,wn){
           <span class="daytag">${s.short}</span>
           ${typeIco?`<span style="color:${c}">${icon(typeIco,13)}</span>`:""}
           <span class="card-title">${esc(T.text)}</span>
-          ${isToday?`<span class="todaypill">HOJE</span>`:""}
+          ${isToday?`<span class="todaypill">HOJE</span>`:isNext?`<span class="todaypill" style="background:var(--z3);color:#08080A">PRÓXIMO</span>`:""}
         </div>
         <div class="card-stats">
           <span class="stat-km">${s.km>0?`${s.km} km`:`${icon("bike",12)} bike`}</span>
@@ -2199,7 +2232,9 @@ function render(){
 }
 
 function start(){
+  jumpToTodaySession();
   render();
+  scrollToTodayCard();
   if(window.claude && window.claude.use){
     window.claude.use("db").then(db=>{
       if(!db) return;
