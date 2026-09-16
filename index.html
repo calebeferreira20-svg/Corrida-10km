@@ -337,6 +337,23 @@ const ZL = { z2:"Z2", z3:"Z3", z4:"Z4", z5:"Z5" };
 const ZHR= { z2:"137–169", z3:"170–186", z4:"187–202", z5:"204+" };
 const ZP = { z2:"6:30–7:00", z3:"5:40–6:05", z4:"5:00–5:25", z5:"4:35–5:00" };
 
+const ATHLETE = { weightKg:83, heightCm:180, age:26 };
+// estimativa de gasto calórico por corrida — regressão de VO2 do ACSM pra corrida
+// (VO2 = 0.2×velocidade + 3.5 ml/kg/min, 5kcal por litro de O2), simplificada pra
+// kcal/km = peso×(1+0.0175×pace_min_km). É uma PREVISÃO pré-treino — o número real
+// que aparece depois de sincronizar o Strava é sempre mais confiável que essa estimativa.
+function estimateRunKcal(km, paceMinKm){
+  if(!km || !paceMinKm) return null;
+  return Math.round(ATHLETE.weightKg * km * (1 + 0.0175*paceMinKm));
+}
+// musculação não tem uma fórmula ACSM tão padronizada quanto corrida — calibrei
+// direto pela média real das suas musculações já sincronizadas do Strava
+// (~5,3 kcal/min pros seus 83kg, entre treinos de intensidade moderada a alta).
+function estimateStrengthKcal(minutes){
+  if(!minutes) return null;
+  return Math.round(ATHLETE.weightKg * 0.064 * minutes);
+}
+
 const PHASES = [
   { id:"B", label:"Consolidação",  weeks:4, freq:5, v0:48, v1:58, color:"#3DD6C0",
     desc:"Você pulou a meia do Rio, então não há fadiga de prova pra absorver. O ciclo parte direto da base atual — 5K em 24:39, longão de 18km com FC controlada. Frequência sobe pra 5x/semana." },
@@ -1689,6 +1706,8 @@ function cardHTML(s,wn){
   const isNext=!isToday && TODAY_OR_NEXT && TODAY_OR_NEXT.weekN===wn && TODAY_OR_NEXT.day===s.day;
   const T=titleWithIcon(s.title);
   const typeIco=T.iconName || TYPE_ICON[s.type];
+  const zPace=ZP[s.zone].split("–").map(paceToDec);
+  const estKcal=s.km>0 ? estimateRunKcal(s.km, (zPace[0]+zPace[1])/2) : null;
 
   return `<div class="card ${done?"done":""}">
     <div class="card-head" data-t="${k}">
@@ -1705,6 +1724,7 @@ function cardHTML(s,wn){
           <span class="zpill" style="background:${c}1F;color:${c}">${ZL[s.zone]}</span>
           <span class="stat-pace" style="color:${c}">${ZP[s.zone]}/km</span>
           ${(s.timeMin!=null)?`<span style="font-family:'JetBrains Mono',monospace;font-size:10.5px;color:var(--text-3)">${icon("clock",10)} ${fmtDuration(s.timeMin,s.timeMax)}</span>`:""}
+          ${estKcal?`<span style="font-family:'JetBrains Mono',monospace;font-size:10.5px;color:var(--text-3)">${icon("flame",10)} ~${estKcal}kcal</span>`:""}
         </div>
         ${s.shoe?`<div class="shoe-note">${icon("shoe",12)} ${esc(s.shoe)}</div>`:""}
       </div>
@@ -1723,6 +1743,10 @@ function cardHTML(s,wn){
         ${(s.timeMin!=null)?`<div style="display:flex;justify-content:space-between;align-items:baseline;margin-top:9px;padding-top:9px;border-top:1px solid var(--line)">
           <span class="pacebox-hr">Duração estimada</span>
           <span style="font-family:'Archivo',sans-serif;font-weight:800;font-size:16px;color:${c}">${fmtDuration(s.timeMin,s.timeMax)}</span>
+        </div>`:""}
+        ${estKcal?`<div style="display:flex;justify-content:space-between;align-items:baseline;margin-top:9px;padding-top:9px;border-top:1px solid var(--line)">
+          <span class="pacebox-hr">${icon("flame",11)} Gasto estimado</span>
+          <span style="font-family:'Archivo',sans-serif;font-weight:800;font-size:16px;color:var(--gold)">~${estKcal}<span class="u">kcal</span></span>
         </div>`:""}
         ${s.note?`<div class="pacebox-note">${esc(s.note)}</div>`:""}
       </div>
@@ -1801,6 +1825,8 @@ function viewStrength(){
   strengthWeek.forEach(s=>{
     const has=s.ex.length>0, k=`M${wn}_${s.day}`;
     const d=gd(wn,`M-${s.day}`), done=has&&!!d.done, open=S.open.has(k);
+    const estMin=has?s.ex.length*10:0;
+    const estKcal=has?estimateStrengthKcal(estMin):null;
     h+=`<div class="strcard ${!has?"rest":""} ${done?"done":""}">
       <div class="str-head" ${has?`data-t2="${k}"`:""} ${has?'style="cursor:pointer"':""}>
         <div class="str-code" ${!has?'style="color:var(--text-3)"':""}>${s.code}</div>
@@ -1817,6 +1843,10 @@ function viewStrength(){
         <div class="str-focus">${esc(s.focus)}</div>
         ${s.ex.map(e=>`<div class="str-ex"><span style="color:var(--gold)">›</span><span>${esc(e)}</span></div>`).join("")}
         <div class="str-int">${esc(s.intensity)}</div>
+        ${estKcal?`<div style="display:flex;justify-content:space-between;align-items:baseline;margin-top:9px;padding-top:9px;border-top:1px solid var(--line)">
+          <span class="pacebox-hr">${icon("flame",11)} Gasto estimado (~${estMin}min)</span>
+          <span style="font-family:'Archivo',sans-serif;font-weight:800;font-size:16px;color:var(--gold)">~${estKcal}<span class="u">kcal</span></span>
+        </div>`:""}
       </div>`:`<div style="padding:0 16px 15px 73px;font-size:11px;color:var(--text-3);line-height:1.5">${esc(s.focus)}</div>`}
     </div>`;
   });
