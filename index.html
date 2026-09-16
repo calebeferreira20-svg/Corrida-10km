@@ -331,7 +331,10 @@ const PLAN_START = new Date("2026-08-24T00:00:00");
 
 const ZC = { z2:"#3DD6C0", z3:"#5B9BF0", z4:"#F5A623", z5:"#F2564B" };
 const ZL = { z2:"Z2", z3:"Z3", z4:"Z4", z5:"Z5" };
-const ZHR= { z2:"127–157", z3:"158–173", z4:"174–188", z5:"189+" };
+// Zonas recalibradas em 16/09 com FC máx real observada (209 bpm, PR 5K 16/08) em vez da
+// estimativa por idade (220-26=194) que subestimava sua FC máx em ~15bpm — mesma proporção
+// %FCmáx de antes, aplicada à base correta.
+const ZHR= { z2:"137–169", z3:"170–186", z4:"187–202", z5:"204+" };
 const ZP = { z2:"6:30–7:00", z3:"5:40–6:05", z4:"5:00–5:25", z5:"4:35–5:00" };
 
 const PHASES = [
@@ -641,7 +644,7 @@ function build(){
           timeMin=tContent.timeMin; timeMax=tContent.timeMax;
         }
         else if(p.t==="easy"){
-          title="Regenerativo"; steps=[`${km} km inteiros em Z2`,"Se a FC passar de 157, desacelere sem culpa"]; note="Base de tudo. Não é pra cansar.";
+          title="Regenerativo"; steps=[`${km} km inteiros em Z2`,"Se a FC passar de 169, desacelere sem culpa"]; note="Base de tudo. Não é pra cansar.";
           const t=segTime(km,PACE_MIN.z2); timeMin=t[0]; timeMax=t[1];
         }
         else {
@@ -1919,11 +1922,11 @@ function mileagePanel(){
 
 function zonesPanelHTML(){
   const zones=[
-    { z:"Z1", hr:"< 126", pace:"> 7:00", name:"Recuperação", c:"#4A8B84", d:"Bem leve, quase trote. Regeneração pura." },
-    { z:"Z2", hr:"127–157", pace:ZP.z2, name:"Aeróbio leve", c:ZC.z2, d:"Consegue conversar frases inteiras. É a base de tudo — longões e regenerativos." },
-    { z:"Z3", hr:"158–173", pace:ZP.z3, name:"Aeróbio moderado", c:ZC.z3, d:"Poucas palavras por vez. É o seu ritmo de meia maratona." },
-    { z:"Z4", hr:"174–188", pace:ZP.z4, name:"Limiar", c:ZC.z4, d:"Frases curtas, esforço controlado. Zona dos blocos de limiar." },
-    { z:"Z5", hr:"189+", pace:ZP.z5, name:"Máximo", c:ZC.z5, d:"Sem conversa. Estímulos curtos e intensos." },
+    { z:"Z1", hr:"< 136", pace:"> 7:00", name:"Recuperação", c:"#4A8B84", d:"Bem leve, quase trote. Regeneração pura." },
+    { z:"Z2", hr:"137–169", pace:ZP.z2, name:"Aeróbio leve", c:ZC.z2, d:"Consegue conversar frases inteiras. É a base de tudo — longões e regenerativos." },
+    { z:"Z3", hr:"170–186", pace:ZP.z3, name:"Aeróbio moderado", c:ZC.z3, d:"Poucas palavras por vez. É o seu ritmo de meia maratona." },
+    { z:"Z4", hr:"187–202", pace:ZP.z4, name:"Limiar", c:ZC.z4, d:"Frases curtas, esforço controlado. Zona dos blocos de limiar." },
+    { z:"Z5", hr:"204+", pace:ZP.z5, name:"Máximo", c:ZC.z5, d:"Sem conversa. Estímulos curtos e intensos." },
   ];
   let h=`<div class="section-head">
     <div class="section-eyebrow">Referência</div>
@@ -1944,6 +1947,10 @@ function zonesPanelHTML(){
       </div>
     </div>`;
   });
+  h+=`<div class="panel" style="border-color:${ZC.z2}40">
+    <div class="panel-lbl" style="color:${ZC.z2}">${icon("refresh",12)} FC recalibrada em 16/09</div>
+    <div class="panel-body">As zonas de FC estavam calculadas com FC máxima estimada por idade (220−26=194) — mas seu pico real observado em esforço é <b>209 bpm</b> (PR de 5K, 16/08), 15 bpm acima da estimativa. Refiz as faixas com a mesma proporção de %FC máx, só que em cima do valor real. Resultado prático: Z2 passa de 127–157 pra <b>137–169</b> — o teto que parecia "estourado" nos últimos treinos não estava, a régua é que estava baixa. Os paces-alvo de cada zona não mudam, só a FC esperada pra sustentar eles.</div>
+  </div>`;
   const raceMid = ((paceToDec(ZP.z3.split("–")[0]) + paceToDec(ZP.z3.split("–")[1])) / 2);
   const raceTimeMid = raceMid * 21.1;
   const raceLo = paceToDec(ZP.z3.split("–")[0]) * 21.1;
