@@ -761,11 +761,14 @@ function build(){
       }
       if(n===4){
         const dom = sessions.find(s=>s.day==="Domingo");
-        if(dom){ dom.note = "Remanejado pra segunda (21/09) pra não perder o volume — entrou junto com o regenerativo da semana 5, 24,6km no dia."; }
+        if(dom){
+          dom.movedTo = new Date("2026-09-21T00:00:00");
+          dom.note = "Remanejado pra segunda de manhã (21/09) pra não perder o volume — o regenerativo da semana 5 entra à noite do mesmo dia, 24,6km no total.";
+        }
       }
       if(n===5){
         const seg = sessions.find(s=>s.day==="Segunda");
-        if(seg){ seg.note = "Feito no mesmo dia do longão remanejado da semana 4 (17,4km) — 21/09 virou dia de 24,6km. Teste de 5K segue normal na terça (22/09)."; }
+        if(seg){ seg.note = "Feito à noite de 21/09, depois do longão remanejado da semana 4 (17,4km) de manhã — 24,6km no dia. Teste de 5K segue normal na terça (22/09)."; }
       }
 
       out.push({ n, range:`${fmtD(ws)} – ${fmtD(we)}`, vol:displayVol, ph, sessions,
@@ -1710,7 +1713,7 @@ const TYPE_ICON = { easy:"wave", quality:"zap", tempo:"chart", long:"mountain", 
 function cardHTML(s,wn){
   const c=ZC[s.zone], k=gk(wn,s.day), d=gd(wn,s.day);
   const done=!!d.done, open=S.open.has(k), edit=S.editing===k;
-  const isToday=sameDay(sessionDate(wn,s.day), new Date());
+  const isToday=sameDay(s.movedTo||sessionDate(wn,s.day), new Date());
   const isNext=!isToday && TODAY_OR_NEXT && TODAY_OR_NEXT.weekN===wn && TODAY_OR_NEXT.day===s.day;
   const T=titleWithIcon(s.title);
   const typeIco=T.iconName || TYPE_ICON[s.type];
