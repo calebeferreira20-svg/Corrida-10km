@@ -1632,7 +1632,22 @@ function header(){
 
 function viewPlan(){
   const wk=WEEKS[S.wk];
-  const list=S.day?wk.sessions.filter(s=>s.day===S.day):wk.sessions;
+  // pares {s, wn} — sessões da própria semana + qualquer sessão remanejada (movedTo) de outra semana que caia num dia dessa
+  let pairs = wk.sessions.map(s=>({s, wn:wk.n}));
+  WEEKS.forEach(w=>{
+    if(w.n===wk.n) return;
+    w.sessions.forEach(s=>{
+      if(!s.movedTo) return;
+      const wd=weekDayFor(s.movedTo);
+      if(wd && wd.weekN===wk.n){
+        const idx=pairs.findIndex(p=>p.s.day===wd.dayName);
+        pairs.splice(idx>=0?idx:pairs.length, 0, {s, wn:w.n});
+      }
+    });
+  });
+  const list = S.day
+    ? pairs.filter(p=>p.s.day===S.day || (p.s.movedTo && weekDayFor(p.s.movedTo).dayName===S.day))
+    : pairs;
   const tc=wk.tag?tagC(wk.tag):wk.ph.color;
 
   let h=`<div id="weekrail"><div class="row">`;
@@ -1679,7 +1694,7 @@ function viewPlan(){
   });
   h+=`</div>`;
 
-  list.forEach(s=>h+=cardHTML(s,wk.n));
+  list.forEach(p=>h+=cardHTML(p.s,p.wn));
 
   h+=`<div class="nav">
     <button id="prev" ${S.wk===0?"disabled":""}>← Semana anterior</button>
