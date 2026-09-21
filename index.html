@@ -759,6 +759,14 @@ function build(){
         });
         displayVol = Math.round(sessions.reduce((a,s)=>a+s.km,0)*10)/10;
       }
+      if(n===4){
+        const dom = sessions.find(s=>s.day==="Domingo");
+        if(dom){ dom.note = "Remanejado pra segunda (21/09) pra não perder o volume — entrou junto com o regenerativo da semana 5, 24,6km no dia."; }
+      }
+      if(n===5){
+        const seg = sessions.find(s=>s.day==="Segunda");
+        if(seg){ seg.note = "Feito no mesmo dia do longão remanejado da semana 4 (17,4km) — 21/09 virou dia de 24,6km. Teste de 5K segue normal na terça (22/09)."; }
+      }
 
       out.push({ n, range:`${fmtD(ws)} – ${fmtD(we)}`, vol:displayVol, ph, sessions,
                  tag: (n===2||n===3) ? "RECUP." : (CHECKPOINT_WEEKS.includes(n) ? "CHECK" : (ph.id==="D"?"PICO": (ph.id==="E" ? (last?"PROVA":"TAPER") : null))),
