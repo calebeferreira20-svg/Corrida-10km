@@ -1,16 +1,18 @@
-const CACHE = 'running-tracker-v1';
+const CACHE = 'meia-bsb-v1';
 const ASSETS = [
-  '/',
-  '/index.html',
-  '/manifest.json',
-  'https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap'
+  './',
+  './index.html',
+  './manifest.json',
+  './icons/icon-192.png',
+  './icons/icon-512.png',
+  'https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800;900&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap'
 ];
 
 self.addEventListener('install', e => {
   e.waitUntil(
     caches.open(CACHE).then(cache => {
       // Cache local assets; ignore font CDN failures
-      return cache.addAll(['/','./index.html','./manifest.json']).catch(() => {});
+      return cache.addAll(['./','./index.html','./manifest.json','./icons/icon-192.png','./icons/icon-512.png']).catch(() => {});
     })
   );
   self.skipWaiting();
