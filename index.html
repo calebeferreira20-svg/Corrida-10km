@@ -770,6 +770,13 @@ function build(){
         const seg = sessions.find(s=>s.day==="Segunda");
         if(seg){ seg.note = "Feito à noite de 21/09, depois do longão remanejado da semana 4 (17,4km) de manhã — 24,6km no dia. Teste de 5K segue normal na terça (22/09)."; }
       }
+      if(n===6){
+        const dom = sessions.find(s=>s.day==="Domingo");
+        if(dom){
+          dom.movedTo = new Date("2026-10-05T00:00:00");
+          dom.note = "Não rodado no domingo (04/10) — remanejado pra segunda à noite (05/10). Saiu 18,51km, bateu quase exato com o planejado.";
+        }
+      }
 
       out.push({ n, range:`${fmtD(ws)} – ${fmtD(we)}`, vol:displayVol, ph, sessions,
                  tag: (n===2||n===3) ? "RECUP." : (CHECKPOINT_WEEKS.includes(n) ? "CHECK" : (ph.id==="D"?"PICO": (ph.id==="E" ? (last?"PROVA":"TAPER") : null))),
