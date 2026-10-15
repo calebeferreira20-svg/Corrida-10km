@@ -1,12 +1,14 @@
 {
-  "name": "8 Semanas · 10K — Tracker de Corrida",
-  "short_name": "10K Tracker",
-  "description": "Acompanhe seu plano de treino de corrida para 10K",
-  "start_url": "/",
+  "name": "Meia Maratona Brasília · 22.11.26",
+  "short_name": "Meia BSB",
+  "description": "Tracker de treino, força e nutrição — Meia Maratona de Brasília, 13 semanas",
+  "start_url": "index.html",
+  "scope": "./",
   "display": "standalone",
-  "background_color": "#0A0A0F",
-  "theme_color": "#0A0A0F",
+  "background_color": "#08080A",
+  "theme_color": "#08080A",
   "orientation": "portrait-primary",
+  "lang": "pt-BR",
   "icons": [
     {
       "src": "icons/icon-192.png",
