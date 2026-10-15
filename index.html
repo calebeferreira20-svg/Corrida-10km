@@ -571,7 +571,7 @@ function timeForDistanceAtVDOT(vdot, distKm, lo=5, hi=300){
 // melhor referência conhecida pra ancorar as fórmulas: usa o teste de 5K/10K do próprio plano se já tiver
 // sido registrado (extrapola menos, é mais confiável); senão cai pro PR de 5K conhecido antes do ciclo.
 function bestKnownPR(){
-  let best={ distKm:5, timeSec:24*60+39, source:"PR de 5K · 24:39 (antes do ciclo, ~20°C no Rio)" };
+  let best={ distKm:5.0365, timeSec:1474, source:"Teste de 5K · 24:34 (checkpoint, 13/10, Taguatinga)" };
   WEEKS.forEach(w=>w.sessions.forEach(s=>{
     if(!/Teste de (5K|10K)/.test(s.title)) return;
     const d=gd(w.n,s.day);
